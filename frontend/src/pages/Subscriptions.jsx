@@ -5,14 +5,19 @@ import SubscriptionForm from '../components/SubscriptionForm';
 
 export default function Subscriptions() {
   const [subscriptions, setSubscriptions] = useState([]);
+  const [priceIncreases, setPriceIncreases] = useState([]);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
 
   async function refresh() {
     try {
-      const { subscriptions } = await api.listSubscriptions();
+      const [{ subscriptions }, summary] = await Promise.all([
+        api.listSubscriptions(),
+        api.dashboardSummary(),
+      ]);
       setSubscriptions(subscriptions);
+      setPriceIncreases(summary.recentPriceIncreases);
     } catch (err) {
       setError(err.message);
     }
@@ -88,6 +93,7 @@ export default function Subscriptions() {
           <SubscriptionCard
             key={s.id}
             subscription={s}
+            priceIncrease={priceIncreases.find((p) => p.subscriptionId === s.id)}
             onEdit={(sub) => {
               setShowForm(false);
               setEditing(sub);

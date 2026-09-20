@@ -38,6 +38,8 @@ export const api = {
   createSubscription: (payload) => request('/subscriptions', { method: 'POST', body: payload }),
   updateSubscription: (id, payload) => request(`/subscriptions/${id}`, { method: 'PUT', body: payload }),
   deleteSubscription: (id) => request(`/subscriptions/${id}`, { method: 'DELETE' }),
+  priceHistory: (id) => request(`/subscriptions/${id}/price-history`),
 
   dashboardSummary: (withinDays = 14) => request(`/dashboard/summary?withinDays=${withinDays}`),
+  dashboardForecast: (months = 12) => request(`/dashboard/forecast?months=${months}`),
 };
