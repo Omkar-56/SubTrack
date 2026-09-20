@@ -6,7 +6,7 @@ const STATUS_STYLE = {
   cancelled: 'text-ink/40 line-through',
 };
 
-export default function SubscriptionCard({ subscription, onEdit, onDelete }) {
+export default function SubscriptionCard({ subscription, onEdit, onDelete, priceIncrease }) {
   const days = daysUntil(subscription.nextRenewalDate);
   const soon = subscription.status === 'active' && days >= 0 && days <= 7;
 
@@ -19,6 +19,11 @@ export default function SubscriptionCard({ subscription, onEdit, onDelete }) {
           {soon && (
             <span className="shrink-0 bg-amber-light px-2 py-0.5 text-xs text-amber">
               renews in {days}d
+            </span>
+          )}
+          {priceIncrease && (
+            <span className="shrink-0 bg-rust-light px-2 py-0.5 text-xs text-rust">
+              price up {formatMoney(priceIncrease.oldAmount, subscription.currency)} → {formatMoney(priceIncrease.newAmount, subscription.currency)}
             </span>
           )}
         </div>
