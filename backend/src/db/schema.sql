@@ -36,3 +36,14 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_next_renewal ON subscriptions(next_renewal_date);
+
+CREATE TABLE IF NOT EXISTS price_history (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  subscription_id UUID NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
+  old_amount NUMERIC(10, 2) NOT NULL,
+  new_amount NUMERIC(10, 2) NOT NULL,
+  changed_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_price_history_subscription_id ON price_history(subscription_id);
+CREATE INDEX IF NOT EXISTS idx_price_history_changed_at ON price_history(changed_at);

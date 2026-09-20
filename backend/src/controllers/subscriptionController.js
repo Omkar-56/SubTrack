@@ -26,4 +26,9 @@ export const subscriptionController = {
     await subscriptionService.remove(req.user.id, req.params.id);
     res.status(204).send();
   }),
+
+  priceHistory: asyncHandler(async (req, res) => {
+    const history = await subscriptionService.priceHistory(req.user.id, req.params.id);
+    res.json({ history });
+  }),
 };
