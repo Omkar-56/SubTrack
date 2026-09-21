@@ -42,4 +42,5 @@ export const api = {
 
   dashboardSummary: (withinDays = 14) => request(`/dashboard/summary?withinDays=${withinDays}`),
   dashboardForecast: (months = 12) => request(`/dashboard/forecast?months=${months}`),
+  dashboardTrend: (months = 12) => request(`/dashboard/trend?months=${months}`),
 };

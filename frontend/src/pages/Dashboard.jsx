@@ -3,16 +3,19 @@ import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import StatCard from '../components/StatCard';
 import ForecastChart from '../components/ForecastChart';
+import TrendChart from '../components/TrendChart';
 import { formatDate, formatMoney, daysUntil } from '../utils/date';
 
 export default function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [forecast, setForecast] = useState(null);
+  const [trend, setTrend] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
     api.dashboardSummary().then(setSummary).catch((err) => setError(err.message));
     api.dashboardForecast(12).then(setForecast).catch((err) => setError(err.message));
+    api.dashboardTrend(12).then(setTrend).catch((err) => setError(err.message));
   }, []);
 
   if (error) return <p className="text-sm text-rust">{error}</p>;
@@ -78,6 +81,17 @@ export default function Dashboard() {
           </div>
         </section>
       </div>
+
+      {trend && (
+        <section>
+          <h2 className="font-display text-lg font-semibold">Spend trend</h2>
+          <p className="mt-1 text-sm text-ink/60">
+            What your recurring monthly spend has been over the past year — the honest answer to
+            "is this creeping up?"
+          </p>
+          <TrendChart months={trend.months} />
+        </section>
+      )}
 
       {forecast && (
         <section>
