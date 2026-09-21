@@ -1,5 +1,7 @@
 import { subscriptionModel } from '../models/subscriptionModel.js';
 import { priceHistoryModel } from '../models/priceHistoryModel.js';
+import { userModel } from '../models/userModel.js';
+import { currencyService } from './currencyService.js';
 import { ApiError } from '../utils/ApiError.js';
 
 const CYCLE_TO_MONTHS = {
@@ -9,20 +11,66 @@ const CYCLE_TO_MONTHS = {
   yearly: 12,
 };
 
-export function monthlyEquivalent(subscription) {
-  const months = CYCLE_TO_MONTHS[subscription.billingCycle];
-  return Number(subscription.amount) / months;
+export function parseDateParts(dateInput) {
+  if (dateInput instanceof Date) {
+    return new Date(dateInput.getFullYear(), dateInput.getMonth(), dateInput.getDate());
+  }
+  const str = String(dateInput).slice(0, 10);
+  const [y, m, d] = str.split('-').map(Number);
+  return new Date(y, m - 1, d);
 }
 
-function addCycle(date, cycle) {
-  const d = new Date(date);
+export function formatDateString(d) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function addCycle(dateInput, cycle) {
+  const d = parseDateParts(dateInput);
   if (cycle === 'weekly') {
     d.setDate(d.getDate() + 7);
-  } else {
-    const monthsToAdd = { monthly: 1, quarterly: 3, yearly: 12 }[cycle];
-    d.setMonth(d.getMonth() + monthsToAdd);
+    return d;
+  }
+  const monthsToAdd = { monthly: 1, quarterly: 3, yearly: 12 }[cycle] || 1;
+  const originalDay = d.getDate();
+  d.setMonth(d.getMonth() + monthsToAdd);
+  if (d.getDate() < originalDay) {
+    d.setDate(0);
   }
   return d;
+}
+
+export function getNextActiveRenewalDate(renewalDateInput, cycle, today = new Date()) {
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  let current = parseDateParts(renewalDateInput);
+
+  let guard = 0;
+  while (current < todayStart && guard < 500) {
+    current = addCycle(current, cycle);
+    guard += 1;
+  }
+  return formatDateString(current);
+}
+
+async function syncOverdueSubscriptions(userId, subscriptions) {
+  const today = new Date();
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+  for (const sub of subscriptions) {
+    if (sub.status === 'active') {
+      const subDate = parseDateParts(sub.nextRenewalDate);
+      if (subDate < todayStart) {
+        const nextDateStr = getNextActiveRenewalDate(sub.nextRenewalDate, sub.billingCycle, today);
+        if (nextDateStr !== formatDateString(subDate)) {
+          await subscriptionModel.updateRenewalDate(userId, sub.id, nextDateStr).catch(() => {});
+          sub.nextRenewalDate = nextDateStr;
+        }
+      }
+    }
+  }
+  return subscriptions;
 }
 
 function monthKey(date) {
@@ -33,12 +81,6 @@ function monthLabel(date) {
   return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 }
 
-/**
- * What a subscription's amount was at a given point in time.
- * Changes are ascending by changed_at: the last change at or before `at` gives
- * the amount in force then; if every change came later, the earliest change's
- * old_amount was the amount back then.
- */
 function amountAsOf(subscription, changes, at) {
   if (!changes || changes.length === 0) return Number(subscription.amount);
 
@@ -54,9 +96,18 @@ function amountAsOf(subscription, changes, at) {
   return amount === null ? Number(subscription.amount) : amount;
 }
 
+async function resolveUserBaseCurrency(userId, overrideCurrency) {
+  if (overrideCurrency && overrideCurrency.length === 3) {
+    return overrideCurrency.toUpperCase();
+  }
+  const user = await userModel.findById(userId);
+  return user?.baseCurrency || 'USD';
+}
+
 export const subscriptionService = {
   async list(userId) {
-    return subscriptionModel.findAllForUser(userId);
+    const subs = await subscriptionModel.findAllForUser(userId);
+    return syncOverdueSubscriptions(userId, subs);
   },
 
   async create(userId, data) {
@@ -66,6 +117,17 @@ export const subscriptionService = {
   async get(userId, id) {
     const sub = await subscriptionModel.findById(userId, id);
     if (!sub) throw new ApiError(404, 'Subscription not found');
+
+    if (sub.status === 'active') {
+      const today = new Date();
+      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      if (parseDateParts(sub.nextRenewalDate) < todayStart) {
+        const nextDateStr = getNextActiveRenewalDate(sub.nextRenewalDate, sub.billingCycle, today);
+        await subscriptionModel.updateRenewalDate(userId, sub.id, nextDateStr).catch(() => {});
+        sub.nextRenewalDate = nextDateStr;
+      }
+    }
+
     return sub;
   },
 
@@ -82,8 +144,15 @@ export const subscriptionService = {
     return updated;
   },
 
+  async advanceCycle(userId, id) {
+    const sub = await this.get(userId, id);
+    const nextDate = addCycle(sub.nextRenewalDate, sub.billingCycle);
+    const nextDateStr = formatDateString(nextDate);
+    return subscriptionModel.updateRenewalDate(userId, id, nextDateStr);
+  },
+
   async priceHistory(userId, id) {
-    await this.get(userId, id); // ensures ownership, throws 404 otherwise
+    await this.get(userId, id);
     return priceHistoryModel.findForSubscription(userId, id);
   },
 
@@ -92,26 +161,41 @@ export const subscriptionService = {
     if (!removed) throw new ApiError(404, 'Subscription not found');
   },
 
-  async dashboard(userId, { upcomingWithinDays = 14 } = {}) {
-    const all = await subscriptionModel.findAllForUser(userId);
+  async dashboard(userId, { upcomingWithinDays = 14, currency = null } = {}) {
+    const baseCurrency = await resolveUserBaseCurrency(userId, currency);
+    const rawSubs = await subscriptionModel.findAllForUser(userId);
+    const all = await syncOverdueSubscriptions(userId, rawSubs);
     const active = all.filter((s) => s.status === 'active');
 
-    const totalMonthly = active.reduce((sum, s) => sum + monthlyEquivalent(s), 0);
+    let totalMonthly = 0;
+    const byCategory = {};
+
+    for (const s of active) {
+      const converted = await currencyService.convert(s.amount, s.currency, baseCurrency);
+      const months = CYCLE_TO_MONTHS[s.billingCycle] || 1;
+      const normalizedMonthly = converted / months;
+
+      totalMonthly += normalizedMonthly;
+      byCategory[s.category] = (byCategory[s.category] || 0) + normalizedMonthly;
+
+      s.convertedAmount = converted;
+      s.convertedMonthly = Number(normalizedMonthly.toFixed(2));
+      s.baseCurrency = baseCurrency;
+    }
+
     const totalYearly = totalMonthly * 12;
 
     const now = new Date();
-    const cutoff = new Date(now.getTime() + upcomingWithinDays * 24 * 60 * 60 * 1000);
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const cutoff = new Date(todayStart.getTime() + (upcomingWithinDays + 1) * 24 * 60 * 60 * 1000);
+
     const upcomingRenewals = active
       .filter((s) => {
-        const d = new Date(s.nextRenewalDate);
-        return d >= now && d <= cutoff;
+        const d = parseDateParts(s.nextRenewalDate);
+        return d >= todayStart && d <= cutoff;
       })
-      .sort((a, b) => new Date(a.nextRenewalDate) - new Date(b.nextRenewalDate));
+      .sort((a, b) => parseDateParts(a.nextRenewalDate) - parseDateParts(b.nextRenewalDate));
 
-    const byCategory = {};
-    for (const s of active) {
-      byCategory[s.category] = (byCategory[s.category] || 0) + monthlyEquivalent(s);
-    }
     const categoryBreakdown = Object.entries(byCategory)
       .map(([category, monthlySpend]) => ({
         category,
@@ -121,7 +205,15 @@ export const subscriptionService = {
 
     const recentPriceIncreases = await priceHistoryModel.findRecentIncreasesForUser(userId, 30);
 
+    for (const p of recentPriceIncreases) {
+      p.convertedOld = await currencyService.convert(p.oldAmount, p.currency, baseCurrency);
+      p.convertedNew = await currencyService.convert(p.newAmount, p.currency, baseCurrency);
+      p.baseCurrency = baseCurrency;
+    }
+
     return {
+      baseCurrency,
+      supportedCurrencies: currencyService.getSupportedCurrencies(),
       totalMonthly: Number(totalMonthly.toFixed(2)),
       totalYearly: Number(totalYearly.toFixed(2)),
       activeCount: active.length,
@@ -132,8 +224,10 @@ export const subscriptionService = {
     };
   },
 
-  async forecast(userId, months = 12) {
-    const all = await subscriptionModel.findAllForUser(userId);
+  async forecast(userId, months = 12, currency = null) {
+    const baseCurrency = await resolveUserBaseCurrency(userId, currency);
+    const rawSubs = await subscriptionModel.findAllForUser(userId);
+    const all = await syncOverdueSubscriptions(userId, rawSubs);
     const active = all.filter((s) => s.status === 'active');
 
     const now = new Date();
@@ -149,16 +243,23 @@ export const subscriptionService = {
     }
 
     for (const s of active) {
-      let occurrence = new Date(s.nextRenewalDate);
-      // safety cap so a bad weekly cycle can't loop indefinitely
+      let occurrence = parseDateParts(s.nextRenewalDate);
+      const convertedAmount = await currencyService.convert(s.amount, s.currency, baseCurrency);
+
       let guard = 0;
       while (occurrence < windowEnd && guard < 500) {
         if (occurrence >= start) {
           const key = monthKey(occurrence);
           const bucket = buckets.get(key);
           if (bucket) {
-            bucket.total += Number(s.amount);
-            bucket.charges.push({ name: s.name, amount: Number(s.amount), date: occurrence.toISOString().slice(0, 10) });
+            bucket.total += convertedAmount;
+            bucket.charges.push({
+              name: s.name,
+              amount: convertedAmount,
+              nativeAmount: Number(s.amount),
+              nativeCurrency: s.currency,
+              date: formatDateString(occurrence),
+            });
           }
         }
         occurrence = addCycle(occurrence, s.billingCycle);
@@ -171,22 +272,13 @@ export const subscriptionService = {
       total: Number(b.total.toFixed(2)),
     }));
 
-    return { months: monthsOut };
+    return { baseCurrency, months: monthsOut };
   },
 
-  /**
-   * Reconstructs what the normalized monthly spend looked like at the start of
-   * each of the past `months` months, using each subscription's created_at and
-   * its recorded price changes.
-   *
-   * Approximations (documented deliberately):
-   *  - deleted subscriptions are gone, so they can't be reflected
-   *  - status changes aren't versioned, so currently-active subscriptions are
-   *    treated as having been active since they were created
-   */
-  async spendTrend(userId, months = 12) {
-    const all = await subscriptionModel.findAllForUser(userId);
-    const active = all.filter((s) => s.status === 'active');
+  async spendTrend(userId, months = 12, currency = null) {
+    const baseCurrency = await resolveUserBaseCurrency(userId, currency);
+    const rawSubs = await subscriptionModel.findAllForUser(userId);
+    const active = rawSubs.filter((s) => s.status === 'active');
     const history = await priceHistoryModel.findAllForUser(userId);
 
     const historyBySub = new Map();
@@ -204,10 +296,10 @@ export const subscriptionService = {
 
       for (const s of active) {
         if (new Date(s.createdAt) > monthStart) continue;
-        total += monthlyEquivalent({
-          amount: amountAsOf(s, historyBySub.get(s.id), monthStart),
-          billingCycle: s.billingCycle,
-        });
+        const nativeAmt = amountAsOf(s, historyBySub.get(s.id), monthStart);
+        const converted = await currencyService.convert(nativeAmt, s.currency, baseCurrency);
+        const cycleMonths = CYCLE_TO_MONTHS[s.billingCycle] || 1;
+        total += converted / cycleMonths;
       }
 
       points.push({
@@ -217,6 +309,6 @@ export const subscriptionService = {
       });
     }
 
-    return { months: points };
+    return { baseCurrency, months: points };
   },
 };

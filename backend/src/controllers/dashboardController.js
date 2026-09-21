@@ -4,19 +4,25 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 export const dashboardController = {
   summary: asyncHandler(async (req, res) => {
     const days = Number(req.query.withinDays) || 14;
-    const summary = await subscriptionService.dashboard(req.user.id, { upcomingWithinDays: days });
+    const currency = req.query.currency || null;
+    const summary = await subscriptionService.dashboard(req.user.id, {
+      upcomingWithinDays: days,
+      currency,
+    });
     res.json(summary);
   }),
 
   forecast: asyncHandler(async (req, res) => {
     const months = Number(req.query.months) || 12;
-    const forecast = await subscriptionService.forecast(req.user.id, months);
+    const currency = req.query.currency || null;
+    const forecast = await subscriptionService.forecast(req.user.id, months, currency);
     res.json(forecast);
   }),
 
   trend: asyncHandler(async (req, res) => {
     const months = Number(req.query.months) || 12;
-    const trend = await subscriptionService.spendTrend(req.user.id, months);
+    const currency = req.query.currency || null;
+    const trend = await subscriptionService.spendTrend(req.user.id, months, currency);
     res.json(trend);
   }),
 };

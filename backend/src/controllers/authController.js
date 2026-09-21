@@ -13,6 +13,12 @@ export const authController = {
   }),
 
   me: asyncHandler(async (req, res) => {
-    res.json({ user: req.user });
+    const user = await authService.me(req.user.id);
+    res.json({ user });
+  }),
+
+  updateCurrency: asyncHandler(async (req, res) => {
+    const user = await authService.updateCurrency(req.user.id, req.body.currency);
+    res.json({ user });
   }),
 };

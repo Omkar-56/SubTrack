@@ -22,6 +22,11 @@ export const subscriptionController = {
     res.json({ subscription });
   }),
 
+  advanceCycle: asyncHandler(async (req, res) => {
+    const subscription = await subscriptionService.advanceCycle(req.user.id, req.params.id);
+    res.json({ subscription });
+  }),
+
   remove: asyncHandler(async (req, res) => {
     await subscriptionService.remove(req.user.id, req.params.id);
     res.status(204).send();
