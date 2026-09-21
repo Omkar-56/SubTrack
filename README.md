@@ -8,7 +8,7 @@ costs per month/year, and what's about to renew.
 
 ## Stack
 
-- **Frontend:** React (Vite) + Tailwind CSS + React Router
+- **Frontend:** React (Vite) + Tailwind CSS + React Router + Recharts
 - **Backend:** Node.js + Express (modular routes → controllers → services → models)
 - **Database:** PostgreSQL
 - **Auth:** JWT (bcrypt-hashed passwords)
@@ -27,11 +27,18 @@ costs per month/year, and what's about to renew.
   surfaces any increase from the last 30 days as a "Price alerts" section,
   and the affected subscription gets an in-line badge — so silent price
   hikes (Netflix, Spotify, gym memberships, etc.) don't slip by unnoticed.
+- **Spend trend (past 12 months):** reconstructs what normalized monthly
+  spend actually was at the start of each of the last 12 months, using each
+  subscription's creation date and its recorded price changes. Interactive
+  line chart with an average reference line; hovering a month shows the
+  month-over-month delta. Answers "is my recurring spend creeping up?"
 - **12-month spend forecast:** projects each active subscription's real
   future renewal dates (not just a monthly average) across the next year
   and buckets the totals by month, so months where several yearly
   subscriptions land together are visible ahead of time, not as a
-  surprise on the bank statement.
+  surprise on the bank statement. Rendered as an interactive line chart —
+  hovering a month lists exactly which subscriptions fall due in it, with
+  an optional cumulative line.
 - Per-user data isolation (every query scoped to the authenticated user)
 
 ## Project structure
@@ -102,13 +109,13 @@ dashboard update.
 | GET    | /api/subscriptions/:id/price-history | yes | Amount-change history for one subscription |
 | GET    | /api/dashboard/summary   | yes  | Spend totals, breakdown & recent price increases |
 | GET    | /api/dashboard/forecast  | yes  | 12-month spend projection by real renewal date |
+| GET    | /api/dashboard/trend     | yes  | Reconstructed monthly spend over the past 12 months |
 
 ## Possible extensions
 
 - Email/push reminders before renewal (cron job + nodemailer)
 - Bank statement CSV import to auto-detect subscriptions
 - Multi-currency conversion for the totals
-- Duplicate/overlap detection (two apps serving the same purpose)
 
 Deliberately **not** in scope here: group/shared expense splitting (e.g.
 splitting a trip's costs among friends). That's a different data model
