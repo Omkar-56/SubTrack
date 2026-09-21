@@ -33,14 +33,19 @@ export const api = {
   register: (payload) => request('/auth/register', { method: 'POST', body: payload, auth: false }),
   login: (payload) => request('/auth/login', { method: 'POST', body: payload, auth: false }),
   me: () => request('/auth/me'),
+  updateCurrency: (currency) => request('/auth/currency', { method: 'PUT', body: { currency } }),
 
   listSubscriptions: () => request('/subscriptions'),
   createSubscription: (payload) => request('/subscriptions', { method: 'POST', body: payload }),
   updateSubscription: (id, payload) => request(`/subscriptions/${id}`, { method: 'PUT', body: payload }),
+  advanceSubscription: (id) => request(`/subscriptions/${id}/advance`, { method: 'POST' }),
   deleteSubscription: (id) => request(`/subscriptions/${id}`, { method: 'DELETE' }),
   priceHistory: (id) => request(`/subscriptions/${id}/price-history`),
 
-  dashboardSummary: (withinDays = 14) => request(`/dashboard/summary?withinDays=${withinDays}`),
-  dashboardForecast: (months = 12) => request(`/dashboard/forecast?months=${months}`),
-  dashboardTrend: (months = 12) => request(`/dashboard/trend?months=${months}`),
+  dashboardSummary: (withinDays = 14, currency = '') =>
+    request(`/dashboard/summary?withinDays=${withinDays}${currency ? `&currency=${currency}` : ''}`),
+  dashboardForecast: (months = 12, currency = '') =>
+    request(`/dashboard/forecast?months=${months}${currency ? `&currency=${currency}` : ''}`),
+  dashboardTrend: (months = 12, currency = '') =>
+    request(`/dashboard/trend?months=${months}${currency ? `&currency=${currency}` : ''}`),
 };

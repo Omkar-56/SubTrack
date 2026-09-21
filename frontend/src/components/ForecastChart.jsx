@@ -11,25 +11,33 @@ const COLORS = {
   axis: '#16231F',
 };
 
-function ForecastTooltip({ active, payload, label }) {
+function ForecastTooltip({ active, payload, label, currency = 'USD' }) {
   if (!active || !payload?.length) return null;
   const point = payload[0].payload;
 
   return (
-    <div className="max-w-xs border border-line bg-white px-3 py-2 shadow-sm">
+    <div className="max-w-xs border border-line bg-white px-3 py-2 shadow-sm rounded-sm">
       <p className="font-display text-sm font-semibold">{label}</p>
-      <p className="tabular mt-1 text-sm" style={{ color: COLORS.due }}>
-        Due this month: {formatMoney(point.total)}
+      <p className="tabular mt-1 text-sm font-medium" style={{ color: COLORS.due }}>
+        Due this month: {formatMoney(point.total, currency)}
       </p>
-      <p className="tabular text-sm" style={{ color: COLORS.cumulative }}>
-        Cumulative: {formatMoney(point.cumulative)}
+      <p className="tabular text-xs" style={{ color: COLORS.cumulative }}>
+        Cumulative: {formatMoney(point.cumulative, currency)}
       </p>
       {point.charges.length > 0 && (
-        <ul className="mt-2 space-y-0.5 border-t border-line pt-2">
+        <ul className="mt-2 space-y-1 border-t border-line pt-2">
           {point.charges.map((c, i) => (
-            <li key={`${c.name}-${i}`} className="flex justify-between gap-4 text-xs text-ink/60">
+            <li key={`${c.name}-${i}`} className="flex items-center justify-between gap-4 text-xs text-ink/70">
               <span className="truncate">{c.name}</span>
-              <span className="tabular shrink-0">{formatMoney(c.amount)}</span>
+              <span className="tabular shrink-0 font-medium">
+                {c.nativeCurrency && c.nativeCurrency !== currency ? (
+                  <span title={`Native: ${formatMoney(c.nativeAmount, c.nativeCurrency)}`}>
+                    {formatMoney(c.amount, currency)}
+                  </span>
+                ) : (
+                  formatMoney(c.amount, currency)
+                )}
+              </span>
             </li>
           ))}
         </ul>
@@ -38,7 +46,7 @@ function ForecastTooltip({ active, payload, label }) {
   );
 }
 
-export default function ForecastChart({ months }) {
+export default function ForecastChart({ months, currency = 'USD' }) {
   const [showCumulative, setShowCumulative] = useState(false);
 
   const data = useMemo(() => {
@@ -56,9 +64,9 @@ export default function ForecastChart({ months }) {
   if (data.length === 0) return null;
 
   return (
-    <div className="mt-3 border border-line bg-white px-4 pb-4 pt-5">
+    <div className="mt-3 border border-line bg-white px-4 pb-4 pt-5 shadow-2xs">
       <div className="mb-2 flex justify-end">
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-ink/60">
+        <label className="flex cursor-pointer items-center gap-2 text-xs text-ink/60">
           <input
             type="checkbox"
             checked={showCumulative}
@@ -82,10 +90,10 @@ export default function ForecastChart({ months }) {
             tick={{ fontSize: 12, fill: COLORS.axis, opacity: 0.5 }}
             tickLine={false}
             axisLine={false}
-            width={56}
-            tickFormatter={(v) => formatMoney(v).replace('.00', '')}
+            width={64}
+            tickFormatter={(v) => formatMoney(v, currency).replace('.00', '')}
           />
-          <Tooltip content={<ForecastTooltip />} cursor={{ stroke: COLORS.grid }} />
+          <Tooltip content={<ForecastTooltip currency={currency} />} cursor={{ stroke: COLORS.grid }} />
           <Legend wrapperStyle={{ fontSize: 12 }} />
           <Line
             type="monotone"

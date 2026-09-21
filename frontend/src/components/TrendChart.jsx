@@ -10,26 +10,26 @@ const COLORS = {
   average: '#C77D2B',
 };
 
-function TrendTooltip({ active, payload, label }) {
+function TrendTooltip({ active, payload, label, currency = 'USD' }) {
   if (!active || !payload?.length) return null;
   const { total, delta } = payload[0].payload;
 
   return (
-    <div className="border border-line bg-white px-3 py-2 shadow-sm">
+    <div className="border border-line bg-white px-3 py-2 shadow-sm rounded-sm">
       <p className="font-display text-sm font-semibold">{label}</p>
-      <p className="tabular mt-1 text-sm" style={{ color: COLORS.line }}>
-        {formatMoney(total)}/mo
+      <p className="tabular mt-1 text-sm font-medium" style={{ color: COLORS.line }}>
+        {formatMoney(total, currency)}/mo
       </p>
       {delta !== null && (
         <p className={`tabular text-xs ${delta > 0 ? 'text-rust' : delta < 0 ? 'text-ledger' : 'text-ink/40'}`}>
-          {delta > 0 ? '+' : ''}{formatMoney(delta)} vs. previous month
+          {delta > 0 ? '+' : ''}{formatMoney(delta, currency)} vs. previous month
         </p>
       )}
     </div>
   );
 }
 
-export default function TrendChart({ months }) {
+export default function TrendChart({ months, currency = 'USD' }) {
   if (!months || months.length === 0) return null;
 
   const data = months.map((m, i) => ({
@@ -41,7 +41,7 @@ export default function TrendChart({ months }) {
   const average = data.reduce((sum, m) => sum + m.total, 0) / data.length;
 
   return (
-    <div className="mt-3 border border-line bg-white px-4 pb-4 pt-5">
+    <div className="mt-3 border border-line bg-white px-4 pb-4 pt-5 shadow-2xs">
       <ResponsiveContainer width="100%" height={220}>
         <LineChart data={data} margin={{ top: 5, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid stroke={COLORS.grid} strokeDasharray="3 3" vertical={false} />
@@ -55,10 +55,10 @@ export default function TrendChart({ months }) {
             tick={{ fontSize: 12, fill: COLORS.axis, opacity: 0.5 }}
             tickLine={false}
             axisLine={false}
-            width={56}
-            tickFormatter={(v) => formatMoney(v).replace('.00', '')}
+            width={64}
+            tickFormatter={(v) => formatMoney(v, currency).replace('.00', '')}
           />
-          <Tooltip content={<TrendTooltip />} cursor={{ stroke: COLORS.grid }} />
+          <Tooltip content={<TrendTooltip currency={currency} />} cursor={{ stroke: COLORS.grid }} />
           <ReferenceLine
             y={average}
             stroke={COLORS.average}

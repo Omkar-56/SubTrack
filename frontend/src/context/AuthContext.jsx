@@ -32,13 +32,22 @@ export function AuthProvider({ children }) {
     setUser(user);
   }, []);
 
+  const setBaseCurrency = useCallback(async (currency) => {
+    try {
+      const { user } = await api.updateCurrency(currency);
+      setUser(user);
+    } catch (err) {
+      console.error('Failed to update currency preference:', err);
+    }
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem('subtrack_token');
     setUser(null);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, setBaseCurrency, logout }}>
       {children}
     </AuthContext.Provider>
   );
