@@ -13,4 +13,10 @@ export const dashboardController = {
     const forecast = await subscriptionService.forecast(req.user.id, months);
     res.json(forecast);
   }),
+
+  trend: asyncHandler(async (req, res) => {
+    const months = Number(req.query.months) || 12;
+    const trend = await subscriptionService.spendTrend(req.user.id, months);
+    res.json(trend);
+  }),
 };

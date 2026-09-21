@@ -7,5 +7,6 @@ const router = Router();
 router.use(requireAuth);
 router.get('/summary', dashboardController.summary);
 router.get('/forecast', dashboardController.forecast);
+router.get('/trend', dashboardController.trend);
 
 export default router;

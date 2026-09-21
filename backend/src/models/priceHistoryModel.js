@@ -25,8 +25,7 @@ export const priceHistoryModel = {
     return rows;
   },
 
-  async findRecentIncreasesForUser(userId, withinDays = 30) {
-    const { rows } = await query(
+  async findRecentIncreasesForUser(userId, withinDays = 30) {    const { rows } = await query(
       `SELECT ph.id, s.id AS "subscriptionId", s.name, s.currency,
               ph.old_amount AS "oldAmount", ph.new_amount AS "newAmount",
               ph.changed_at AS "changedAt"
@@ -37,6 +36,19 @@ export const priceHistoryModel = {
          AND ph.changed_at >= now() - ($2 || ' days')::interval
        ORDER BY ph.changed_at DESC`,
       [userId, withinDays]
+    );
+    return rows;
+  },
+
+  async findAllForUser(userId) {
+    const { rows } = await query(
+      `SELECT ph.subscription_id AS "subscriptionId", ph.old_amount AS "oldAmount",
+              ph.new_amount AS "newAmount", ph.changed_at AS "changedAt"
+       FROM price_history ph
+       JOIN subscriptions s ON s.id = ph.subscription_id
+       WHERE s.user_id = $1
+       ORDER BY ph.changed_at ASC`,
+      [userId]
     );
     return rows;
   },

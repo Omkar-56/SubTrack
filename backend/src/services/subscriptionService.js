@@ -33,6 +33,27 @@ function monthLabel(date) {
   return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 }
 
+/**
+ * What a subscription's amount was at a given point in time.
+ * Changes are ascending by changed_at: the last change at or before `at` gives
+ * the amount in force then; if every change came later, the earliest change's
+ * old_amount was the amount back then.
+ */
+function amountAsOf(subscription, changes, at) {
+  if (!changes || changes.length === 0) return Number(subscription.amount);
+
+  let amount = null;
+  for (const change of changes) {
+    if (new Date(change.changedAt) <= at) {
+      amount = Number(change.newAmount);
+    } else {
+      if (amount === null) amount = Number(change.oldAmount);
+      break;
+    }
+  }
+  return amount === null ? Number(subscription.amount) : amount;
+}
+
 export const subscriptionService = {
   async list(userId) {
     return subscriptionModel.findAllForUser(userId);
@@ -151,5 +172,51 @@ export const subscriptionService = {
     }));
 
     return { months: monthsOut };
+  },
+
+  /**
+   * Reconstructs what the normalized monthly spend looked like at the start of
+   * each of the past `months` months, using each subscription's created_at and
+   * its recorded price changes.
+   *
+   * Approximations (documented deliberately):
+   *  - deleted subscriptions are gone, so they can't be reflected
+   *  - status changes aren't versioned, so currently-active subscriptions are
+   *    treated as having been active since they were created
+   */
+  async spendTrend(userId, months = 12) {
+    const all = await subscriptionModel.findAllForUser(userId);
+    const active = all.filter((s) => s.status === 'active');
+    const history = await priceHistoryModel.findAllForUser(userId);
+
+    const historyBySub = new Map();
+    for (const h of history) {
+      if (!historyBySub.has(h.subscriptionId)) historyBySub.set(h.subscriptionId, []);
+      historyBySub.get(h.subscriptionId).push(h);
+    }
+
+    const now = new Date();
+    const points = [];
+
+    for (let i = months - 1; i >= 0; i--) {
+      const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      let total = 0;
+
+      for (const s of active) {
+        if (new Date(s.createdAt) > monthStart) continue;
+        total += monthlyEquivalent({
+          amount: amountAsOf(s, historyBySub.get(s.id), monthStart),
+          billingCycle: s.billingCycle,
+        });
+      }
+
+      points.push({
+        month: monthKey(monthStart),
+        label: monthLabel(monthStart),
+        total: Number(total.toFixed(2)),
+      });
+    }
+
+    return { months: points };
   },
 };
