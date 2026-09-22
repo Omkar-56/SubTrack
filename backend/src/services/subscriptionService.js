@@ -1,5 +1,7 @@
 import { subscriptionModel } from '../models/subscriptionModel.js';
 import { priceHistoryModel } from '../models/priceHistoryModel.js';
+import { paymentModel } from '../models/paymentModel.js';
+import { reminderModel } from '../models/reminderModel.js';
 import { userModel } from '../models/userModel.js';
 import { currencyService } from './currencyService.js';
 import { ApiError } from '../utils/ApiError.js';
@@ -151,6 +153,47 @@ export const subscriptionService = {
     return subscriptionModel.updateRenewalDate(userId, id, nextDateStr);
   },
 
+  async confirmPayment(userId, id, paymentData = {}) {
+    const sub = await this.get(userId, id);
+    const amount = Number(paymentData.amount) || Number(sub.amount);
+    const currency = paymentData.currency || sub.currency;
+    const paidDate = paymentData.paidDate || formatDateString(new Date());
+    const notes = paymentData.notes || `Payment confirmed for ${sub.billingCycle} cycle`;
+
+    // 1. Record payment history
+    const payment = await paymentModel.create({
+      userId,
+      subscriptionId: sub.id,
+      amount,
+      currency,
+      paidDate,
+      billingCycle: sub.billingCycle,
+      notes,
+    });
+
+    // 2. Advance renewal date to the next cycle
+    const nextDate = addCycle(sub.nextRenewalDate, sub.billingCycle);
+    const nextDateStr = formatDateString(nextDate);
+    const updatedSub = await subscriptionModel.updateRenewalDate(userId, id, nextDateStr);
+
+    // 3. Mark any pending reminders as paid
+    await reminderModel.markPaidForSubscription(userId, id);
+
+    return {
+      subscription: updatedSub,
+      payment,
+    };
+  },
+
+  async getPayments(userId, id) {
+    await this.get(userId, id);
+    return paymentModel.findBySubscriptionId(userId, id);
+  },
+
+  async getAllPayments(userId, limit = 50) {
+    return paymentModel.findRecentForUser(userId, limit);
+  },
+
   async priceHistory(userId, id) {
     await this.get(userId, id);
     return priceHistoryModel.findForSubscription(userId, id);
@@ -176,7 +219,24 @@ export const subscriptionService = {
       const normalizedMonthly = converted / months;
 
       totalMonthly += normalizedMonthly;
-      byCategory[s.category] = (byCategory[s.category] || 0) + normalizedMonthly;
+
+      if (!byCategory[s.category]) {
+        byCategory[s.category] = {
+          category: s.category,
+          monthlySpend: 0,
+          count: 0,
+          subscriptions: [],
+        };
+      }
+
+      byCategory[s.category].monthlySpend += normalizedMonthly;
+      byCategory[s.category].count += 1;
+      byCategory[s.category].subscriptions.push({
+        name: s.name,
+        amount: converted,
+        nativeAmount: Number(s.amount),
+        currency: s.currency,
+      });
 
       s.convertedAmount = converted;
       s.convertedMonthly = Number(normalizedMonthly.toFixed(2));
@@ -196,10 +256,14 @@ export const subscriptionService = {
       })
       .sort((a, b) => parseDateParts(a.nextRenewalDate) - parseDateParts(b.nextRenewalDate));
 
-    const categoryBreakdown = Object.entries(byCategory)
-      .map(([category, monthlySpend]) => ({
-        category,
-        monthlySpend: Number(monthlySpend.toFixed(2)),
+    const categoryBreakdown = Object.values(byCategory)
+      .map((item) => ({
+        category: item.category,
+        monthlySpend: Number(item.monthlySpend.toFixed(2)),
+        yearlySpend: Number((item.monthlySpend * 12).toFixed(2)),
+        count: item.count,
+        percentage: totalMonthly > 0 ? Number(((item.monthlySpend / totalMonthly) * 100).toFixed(1)) : 0,
+        topSubscriptions: item.subscriptions.slice(0, 3),
       }))
       .sort((a, b) => b.monthlySpend - a.monthlySpend);
 
@@ -211,6 +275,9 @@ export const subscriptionService = {
       p.baseCurrency = baseCurrency;
     }
 
+    // Pending Reminders
+    const pendingReminders = await reminderModel.findPendingForUser(userId);
+
     return {
       baseCurrency,
       supportedCurrencies: currencyService.getSupportedCurrencies(),
@@ -221,6 +288,7 @@ export const subscriptionService = {
       upcomingRenewals,
       categoryBreakdown,
       recentPriceIncreases,
+      pendingReminders,
     };
   },
 
@@ -309,6 +377,34 @@ export const subscriptionService = {
       });
     }
 
-    return { baseCurrency, months: points };
+    // Compute Trend Metrics
+    const totals = points.map((p) => p.total);
+    const sum = totals.reduce((a, b) => a + b, 0);
+    const average = points.length > 0 ? Number((sum / points.length).toFixed(2)) : 0;
+
+    const firstTotal = points[0]?.total || 0;
+    const latestTotal = points[points.length - 1]?.total || 0;
+    const netDelta = Number((latestTotal - firstTotal).toFixed(2));
+    const netDeltaPercent = firstTotal > 0 ? Number(((netDelta / firstTotal) * 100).toFixed(1)) : 0;
+
+    let peakMonth = points[0] || null;
+    let lowMonth = points[0] || null;
+    for (const p of points) {
+      if (!peakMonth || p.total > peakMonth.total) peakMonth = p;
+      if (!lowMonth || p.total < lowMonth.total) lowMonth = p;
+    }
+
+    return {
+      baseCurrency,
+      months: points,
+      summary: {
+        average,
+        latestTotal,
+        netDelta,
+        netDeltaPercent,
+        peakMonth,
+        lowMonth,
+      },
+    };
   },
 };
