@@ -5,6 +5,7 @@ import SubscriptionCard from '../components/SubscriptionCard';
 import SubscriptionForm from '../components/SubscriptionForm';
 import PaymentConfirmModal from '../components/PaymentConfirmModal';
 import PaymentHistoryModal from '../components/PaymentHistoryModal';
+import CancellationGuideModal from '../components/CancellationGuideModal';
 import { formatMoney } from '../utils/date';
 
 const CYCLE_TO_MONTHS = {
@@ -28,9 +29,10 @@ export default function Subscriptions() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
 
-  // Modals for Payment Confirmation and History
+  // Modals for Payment Confirmation, History & Cancellation Guides
   const [payingSub, setPayingSub] = useState(null);
   const [historySub, setHistorySub] = useState(null);
+  const [guideSub, setGuideSub] = useState(null);
 
   const baseCurrency = user?.baseCurrency || 'USD';
 
@@ -102,6 +104,24 @@ export default function Subscriptions() {
     await api.confirmPayment(payingSub.id, paymentData);
     setPayingSub(null);
     refresh();
+  }
+
+  async function handleStatusChange(subscription, newStatus) {
+    try {
+      await api.updateSubscription(subscription.id, {
+        name: subscription.name,
+        category: subscription.category,
+        amount: subscription.amount,
+        currency: subscription.currency,
+        billingCycle: subscription.billingCycle,
+        nextRenewalDate: subscription.nextRenewalDate?.slice(0, 10),
+        status: newStatus,
+        notes: subscription.notes || '',
+      });
+      refresh();
+    } catch (err) {
+      setError(err.message);
+    }
   }
 
   async function handleDelete(subscription) {
@@ -413,6 +433,7 @@ export default function Subscriptions() {
             }}
             onAdvance={handleAdvance}
             onConfirmPayment={(sub) => setPayingSub(sub)}
+            onCancelGuide={(sub) => setGuideSub(sub)}
             onViewPayments={(sub) => setHistorySub(sub)}
             onDelete={handleDelete}
           />
@@ -425,6 +446,15 @@ export default function Subscriptions() {
           subscription={payingSub}
           onConfirm={handleConfirmPayment}
           onCancel={() => setPayingSub(null)}
+        />
+      )}
+
+      {/* Cancellation Guide Modal */}
+      {guideSub && (
+        <CancellationGuideModal
+          subscription={guideSub}
+          onClose={() => setGuideSub(null)}
+          onStatusChange={handleStatusChange}
         />
       )}
 

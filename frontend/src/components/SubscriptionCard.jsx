@@ -15,6 +15,7 @@ export default function SubscriptionCard({
   onAdvance,
   onConfirmPayment,
   onViewPayments,
+  onCancelGuide,
   priceIncrease,
 }) {
   const days = daysUntil(subscription.nextRenewalDate);
@@ -84,8 +85,7 @@ export default function SubscriptionCard({
           <p className="tabular font-display text-base font-semibold text-ink">
             {formatMoney(subscription.amount, subscription.currency)}
             <span className="text-xs font-normal text-ink/50">
-              /{subscription.billingCycle === 'yearly' ? 'yr' : subscription.billingCycle === 'weekly' ? 'wk' : 'mo'}
-            </span>
+              /{subscription.billingCycle === 'yearly' ? 'yr' : subscription.billingCycle === 'weekly' ? 'wk' : 'mo'}\n            </span>
           </p>
           {isDifferentCurrency && (
             <p className="tabular text-[11px] text-ink/40">
@@ -95,7 +95,7 @@ export default function SubscriptionCard({
         </div>
 
         <div className="flex items-center gap-1 opacity-90 transition-opacity">
-          {/* Confirm Payment button (rolls over to next cycle upon user confirmation) */}
+          {/* Confirm Payment button */}
           {subscription.status === 'active' && onConfirmPayment && (
             <button
               onClick={() => onConfirmPayment(subscription)}
@@ -106,7 +106,18 @@ export default function SubscriptionCard({
             </button>
           )}
 
-          {/* History / Receipts button */}
+          {/* Cancellation Guide / Direct Link Assistant */}
+          {subscription.status !== 'cancelled' && onCancelGuide && (
+            <button
+              onClick={() => onCancelGuide(subscription)}
+              className="rounded border border-line bg-paper px-2 py-1 text-xs font-medium text-ink/70 hover:border-rust/40 hover:bg-rust-light hover:text-rust transition-colors"
+              title="View direct cancellation link and step-by-step instructions"
+            >
+              Cancel Guide
+            </button>
+          )}
+
+          {/* Receipts button */}
           {onViewPayments && (
             <button
               onClick={() => onViewPayments(subscription)}
@@ -114,16 +125,6 @@ export default function SubscriptionCard({
               title="View past confirmed payments for this subscription"
             >
               Receipts
-            </button>
-          )}
-
-          {subscription.status === 'active' && onAdvance && (
-            <button
-              onClick={() => onAdvance(subscription)}
-              className="rounded px-2 py-1 text-xs font-medium text-ink/60 hover:bg-stone-100 hover:text-ledger transition-colors"
-              title="Advance renewal date without creating payment record"
-            >
-              ↻ Next
             </button>
           )}
 
