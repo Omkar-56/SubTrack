@@ -39,8 +39,15 @@ export const api = {
   createSubscription: (payload) => request('/subscriptions', { method: 'POST', body: payload }),
   updateSubscription: (id, payload) => request(`/subscriptions/${id}`, { method: 'PUT', body: payload }),
   advanceSubscription: (id) => request(`/subscriptions/${id}/advance`, { method: 'POST' }),
+  confirmPayment: (id, payload = {}) => request(`/subscriptions/${id}/confirm-payment`, { method: 'POST', body: payload }),
   deleteSubscription: (id) => request(`/subscriptions/${id}`, { method: 'DELETE' }),
   priceHistory: (id) => request(`/subscriptions/${id}/price-history`),
+  getPayments: (id) => request(`/subscriptions/${id}/payments`),
+  getAllPayments: (limit = 50) => request(`/subscriptions/payments/recent?limit=${limit}`),
+
+  getReminders: () => request('/subscriptions/reminders'),
+  dismissReminder: (id) => request(`/subscriptions/reminders/${id}/dismiss`, { method: 'POST' }),
+  triggerReminder: (id) => request(`/subscriptions/${id}/remind`, { method: 'POST' }),
 
   dashboardSummary: (withinDays = 14, currency = '') =>
     request(`/dashboard/summary?withinDays=${withinDays}${currency ? `&currency=${currency}` : ''}`),

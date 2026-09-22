@@ -13,6 +13,8 @@ export default function SubscriptionCard({
   onEdit,
   onDelete,
   onAdvance,
+  onConfirmPayment,
+  onViewPayments,
   priceIncrease,
 }) {
   const days = daysUntil(subscription.nextRenewalDate);
@@ -93,15 +95,38 @@ export default function SubscriptionCard({
         </div>
 
         <div className="flex items-center gap-1 opacity-90 transition-opacity">
+          {/* Confirm Payment button (rolls over to next cycle upon user confirmation) */}
+          {subscription.status === 'active' && onConfirmPayment && (
+            <button
+              onClick={() => onConfirmPayment(subscription)}
+              className="rounded bg-ledger-light border border-ledger/30 px-2 py-1 text-xs font-semibold text-ledger-dark hover:bg-ledger hover:text-white transition-colors shadow-2xs"
+              title="Confirm you paid this cycle and roll over to the next due date"
+            >
+              ✓ Paid
+            </button>
+          )}
+
+          {/* History / Receipts button */}
+          {onViewPayments && (
+            <button
+              onClick={() => onViewPayments(subscription)}
+              className="hidden sm:inline-block rounded px-2 py-1 text-xs font-medium text-ink/60 hover:bg-stone-100 hover:text-ink transition-colors"
+              title="View past confirmed payments for this subscription"
+            >
+              Receipts
+            </button>
+          )}
+
           {subscription.status === 'active' && onAdvance && (
             <button
               onClick={() => onAdvance(subscription)}
-              className="rounded px-2 py-1 text-xs font-medium text-ledger hover:bg-ledger-light transition-colors"
-              title="Advance renewal date to the next cycle"
+              className="rounded px-2 py-1 text-xs font-medium text-ink/60 hover:bg-stone-100 hover:text-ledger transition-colors"
+              title="Advance renewal date without creating payment record"
             >
-              ↻ Next cycle
+              ↻ Next
             </button>
           )}
+
           <button
             onClick={() => onEdit(subscription)}
             className="rounded px-2 py-1 text-xs font-medium text-ink/60 hover:bg-stone-100 hover:text-ledger transition-colors"

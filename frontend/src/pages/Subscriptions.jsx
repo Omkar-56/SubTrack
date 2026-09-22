@@ -3,6 +3,8 @@ import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import SubscriptionCard from '../components/SubscriptionCard';
 import SubscriptionForm from '../components/SubscriptionForm';
+import PaymentConfirmModal from '../components/PaymentConfirmModal';
+import PaymentHistoryModal from '../components/PaymentHistoryModal';
 import { formatMoney } from '../utils/date';
 
 const CYCLE_TO_MONTHS = {
@@ -25,6 +27,10 @@ export default function Subscriptions() {
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
+
+  // Modals for Payment Confirmation and History
+  const [payingSub, setPayingSub] = useState(null);
+  const [historySub, setHistorySub] = useState(null);
 
   const baseCurrency = user?.baseCurrency || 'USD';
 
@@ -62,6 +68,14 @@ export default function Subscriptions() {
     refresh();
   }, [baseCurrency]);
 
+  useEffect(() => {
+    function onExternalRefresh() {
+      refresh();
+    }
+    window.addEventListener('subtrack:refresh', onExternalRefresh);
+    return () => window.removeEventListener('subtrack:refresh', onExternalRefresh);
+  }, [baseCurrency]);
+
   async function handleCreate(data) {
     await api.createSubscription(data);
     setShowForm(false);
@@ -81,6 +95,13 @@ export default function Subscriptions() {
     } catch (err) {
       setError(err.message);
     }
+  }
+
+  async function handleConfirmPayment(paymentData) {
+    if (!payingSub) return;
+    await api.confirmPayment(payingSub.id, paymentData);
+    setPayingSub(null);
+    refresh();
   }
 
   async function handleDelete(subscription) {
@@ -391,10 +412,29 @@ export default function Subscriptions() {
               setEditing(sub);
             }}
             onAdvance={handleAdvance}
+            onConfirmPayment={(sub) => setPayingSub(sub)}
+            onViewPayments={(sub) => setHistorySub(sub)}
             onDelete={handleDelete}
           />
         ))}
       </div>
+
+      {/* Payment Confirmation Modal */}
+      {payingSub && (
+        <PaymentConfirmModal
+          subscription={payingSub}
+          onConfirm={handleConfirmPayment}
+          onCancel={() => setPayingSub(null)}
+        />
+      )}
+
+      {/* Payment Receipts / History Modal */}
+      {historySub && (
+        <PaymentHistoryModal
+          subscription={historySub}
+          onClose={() => setHistorySub(null)}
+        />
+      )}
     </div>
   );
 }
