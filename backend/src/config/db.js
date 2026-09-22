@@ -32,8 +32,7 @@ async function ensureSchema() {
       ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS reminder_days_before INT NOT NULL DEFAULT 3;
       ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS last_reminder_sent_at TIMESTAMPTZ;
 
-      CREATE TABLE IF NOT EXISTS payments (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      CREATE TABLE IF NOT EXISTS payments (\n        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         subscription_id UUID NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
         amount NUMERIC(10, 2) NOT NULL,
@@ -58,7 +57,6 @@ async function ensureSchema() {
     `);
     schemaEnsured = true;
   } catch (err) {
-    // If users table is not created yet, migrate script will handle it
     if (env.nodeEnv === 'development') {
       console.log('ensureSchema note:', err.message);
     }
@@ -69,12 +67,7 @@ export async function query(text, params) {
   if (!schemaEnsured) {
     await ensureSchema();
   }
-  const start = Date.now();
-  const result = await pool.query(text, params);
-  if (env.nodeEnv === 'development') {
-    console.log('query', { text, duration: Date.now() - start, rows: result.rowCount });
-  }
-  return result;
+  return pool.query(text, params);
 }
 
 export async function withTransaction(callback) {

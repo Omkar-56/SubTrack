@@ -209,6 +209,8 @@ export const subscriptionService = {
     const rawSubs = await subscriptionModel.findAllForUser(userId);
     const all = await syncOverdueSubscriptions(userId, rawSubs);
     const active = all.filter((s) => s.status === 'active');
+    const paused = all.filter((s) => s.status === 'paused');
+    const cancelled = all.filter((s) => s.status === 'cancelled');
 
     let totalMonthly = 0;
     const byCategory = {};
@@ -242,6 +244,25 @@ export const subscriptionService = {
       s.convertedMonthly = Number(normalizedMonthly.toFixed(2));
       s.baseCurrency = baseCurrency;
     }
+
+    // Monthly Savings calculation (from Cancelled + Paused subscriptions)
+    let monthlySavingsFromCancelled = 0;
+    let monthlySavingsFromPaused = 0;
+
+    for (const s of cancelled) {
+      const converted = await currencyService.convert(s.amount, s.currency, baseCurrency);
+      const months = CYCLE_TO_MONTHS[s.billingCycle] || 1;
+      monthlySavingsFromCancelled += converted / months;
+    }
+
+    for (const s of paused) {
+      const converted = await currencyService.convert(s.amount, s.currency, baseCurrency);
+      const months = CYCLE_TO_MONTHS[s.billingCycle] || 1;
+      monthlySavingsFromPaused += converted / months;
+    }
+
+    const totalMonthlySaved = monthlySavingsFromCancelled + monthlySavingsFromPaused;
+    const totalYearlySaved = totalMonthlySaved * 12;
 
     const totalYearly = totalMonthly * 12;
 
@@ -284,7 +305,17 @@ export const subscriptionService = {
       totalMonthly: Number(totalMonthly.toFixed(2)),
       totalYearly: Number(totalYearly.toFixed(2)),
       activeCount: active.length,
+      pausedCount: paused.length,
+      cancelledCount: cancelled.length,
       totalCount: all.length,
+      savings: {
+        monthlySaved: Number(totalMonthlySaved.toFixed(2)),
+        yearlySaved: Number(totalYearlySaved.toFixed(2)),
+        cancelledMonthly: Number(monthlySavingsFromCancelled.toFixed(2)),
+        pausedMonthly: Number(monthlySavingsFromPaused.toFixed(2)),
+        cancelledCount: cancelled.length,
+        pausedCount: paused.length,
+      },
       upcomingRenewals,
       categoryBreakdown,
       recentPriceIncreases,
