@@ -1,40 +1,7 @@
 import { useState } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { formatMoney } from '../utils/date';
 import { getCategoryChartColor } from '../utils/brands';
-
-function CustomDonutTooltip({ active, payload, currency = 'USD' }) {
-  if (!active || !payload?.length) return null;
-  const data = payload[0].payload;
-
-  return (
-    <div className="rounded border border-line bg-white px-3 py-2 shadow-md">
-      <div className="flex items-center gap-2">
-        <span
-          className="inline-block h-2.5 w-2.5 rounded-full"
-          style={{ backgroundColor: data.color }}
-        />
-        <span className="font-display text-sm font-semibold capitalize text-ink">
-          {data.category}
-        </span>
-      </div>
-      <p className="tabular mt-1 text-sm font-bold text-ink">
-        {formatMoney(data.monthlySpend, currency)}
-        <span className="text-xs font-normal text-ink/50">/mo</span>
-      </p>
-      <div className="mt-1 flex items-center gap-2 text-xs text-ink/60">
-        <span>{data.percentage}% of spend</span>
-        <span>·</span>
-        <span>{data.count} {data.count === 1 ? 'sub' : 'subs'}</span>
-      </div>
-      {data.yearlySpend > 0 && (
-        <p className="tabular mt-1 border-t border-line/60 pt-1 text-[11px] text-ink/50">
-          ≈ {formatMoney(data.yearlySpend, currency)}/year
-        </p>
-      )}
-    </div>
-  );
-}
 
 export default function CategoryBreakdown({ categories = [], totalMonthly = 0, currency = 'USD' }) {
   const [activeIndex, setActiveIndex] = useState(null);
@@ -56,11 +23,11 @@ export default function CategoryBreakdown({ categories = [], totalMonthly = 0, c
   const hoveredItem = activeIndex !== null ? chartData[activeIndex] : null;
 
   return (
-    <div className="mt-3 border border-line bg-white p-4 shadow-2xs">
+    <div className="mt-3 border border-line bg-white p-5 shadow-2xs">
       <div className="grid grid-cols-1 items-center gap-6 sm:grid-cols-12">
         {/* Donut Chart with Center Display */}
         <div className="relative flex items-center justify-center sm:col-span-5">
-          <div className="h-[190px] w-[190px]">
+          <div className="h-[210px] w-[210px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -69,8 +36,8 @@ export default function CategoryBreakdown({ categories = [], totalMonthly = 0, c
                   nameKey="category"
                   cx="50%"
                   cy="50%"
-                  innerRadius={55}
-                  outerRadius={75}
+                  innerRadius={62}
+                  outerRadius={84}
                   paddingAngle={3}
                   onMouseEnter={(_, index) => setActiveIndex(index)}
                   onMouseLeave={() => setActiveIndex(null)}
@@ -83,38 +50,41 @@ export default function CategoryBreakdown({ categories = [], totalMonthly = 0, c
                       strokeWidth={2}
                       className="cursor-pointer transition-opacity duration-200"
                       style={{
-                        opacity: activeIndex === null || activeIndex === index ? 1 : 0.4,
+                        opacity: activeIndex === null || activeIndex === index ? 1 : 0.35,
                         transform: activeIndex === index ? 'scale(1.04)' : 'scale(1)',
                         transformOrigin: 'center center',
                       }}
                     />
                   ))}
                 </Pie>
-                <Tooltip content={<CustomDonutTooltip currency={currency} />} />
               </PieChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Center Callout */}
-          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+          {/* Clean Center Callout (No Tooltip Collisions) */}
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center px-4">
             {hoveredItem ? (
               <>
-                <span className="max-w-[100px] truncate text-[11px] font-semibold uppercase tracking-wider text-ink/50">
+                <span className="max-w-[110px] truncate text-[11px] font-bold uppercase tracking-wider text-ink/60">
                   {hoveredItem.category}
                 </span>
-                <span className="tabular font-display text-sm font-bold text-ink">
+                <span className="tabular font-display text-lg font-bold text-ink">
                   {hoveredItem.percentage}%
                 </span>
-                <span className="tabular text-[10px] text-ink/40">
+                <span className="tabular text-xs font-medium text-ink/70">
                   {formatMoney(hoveredItem.monthlySpend, currency)}
+                  <span className="text-[10px] font-normal text-ink/40">/mo</span>
+                </span>
+                <span className="text-[10px] text-ink/40 mt-0.5">
+                  {hoveredItem.count} {hoveredItem.count === 1 ? 'sub' : 'subs'}
                 </span>
               </>
             ) : (
               <>
-                <span className="text-[11px] uppercase tracking-wider text-ink/50">
+                <span className="text-[11px] uppercase tracking-wider font-semibold text-ink/50">
                   Total
                 </span>
-                <span className="tabular font-display text-sm font-bold text-ink">
+                <span className="tabular font-display text-base font-bold text-ink">
                   {formatMoney(totalMonthly, currency)}
                 </span>
                 <span className="text-[10px] text-ink/40">/month</span>

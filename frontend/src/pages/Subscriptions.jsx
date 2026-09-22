@@ -110,11 +110,11 @@ export default function Subscriptions() {
     try {
       await api.updateSubscription(subscription.id, {
         name: subscription.name,
-        category: subscription.category,
-        amount: subscription.amount,
-        currency: subscription.currency,
-        billingCycle: subscription.billingCycle,
-        nextRenewalDate: subscription.nextRenewalDate?.slice(0, 10),
+        category: subscription.category || 'other',
+        amount: Number(subscription.amount),
+        currency: subscription.currency || 'USD',
+        billingCycle: subscription.billingCycle || 'monthly',
+        nextRenewalDate: String(subscription.nextRenewalDate).slice(0, 10),
         status: newStatus,
         notes: subscription.notes || '',
       });

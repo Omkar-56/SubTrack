@@ -48,6 +48,12 @@ export default function Dashboard() {
 
   const baseCurrency = summary.baseCurrency || currentCurrency;
   const pendingReminders = summary.pendingReminders || [];
+  const savings = summary.savings || {
+    monthlySaved: 0,
+    yearlySaved: 0,
+    cancelledCount: 0,
+    pausedCount: 0,
+  };
 
   return (
     <div className="space-y-10">
@@ -102,17 +108,30 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* Top Stat Cards: Spend & Savings Metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          label="Monthly spend"
+          label="Monthly commitment"
           value={formatMoney(summary.totalMonthly, baseCurrency)}
+          sublabel="Active recurring charges"
           tone="ledger"
         />
         <StatCard
-          label="Yearly spend"
+          label="Yearly run rate"
           value={formatMoney(summary.totalYearly, baseCurrency)}
+          sublabel="Projected 12-month total"
         />
-        <StatCard label="Active subscriptions" value={summary.activeCount} />
+        <StatCard
+          label="Active subscriptions"
+          value={summary.activeCount}
+          sublabel={`${summary.totalCount || summary.activeCount} total tracked`}
+        />
+        <StatCard
+          label="Monthly savings"
+          value={formatMoney(savings.monthlySaved, baseCurrency)}
+          sublabel={`≈ ${formatMoney(savings.yearlySaved, baseCurrency)}/yr (${savings.cancelledCount} cancelled, ${savings.pausedCount} paused)`}
+          tone={savings.monthlySaved > 0 ? 'emerald' : 'default'}
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
