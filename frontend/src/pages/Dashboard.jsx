@@ -5,7 +5,9 @@ import { useAuth } from '../context/AuthContext';
 import StatCard from '../components/StatCard';
 import ForecastChart from '../components/ForecastChart';
 import TrendChart from '../components/TrendChart';
+import CategoryBreakdown from '../components/CategoryBreakdown';
 import BrandLogo from '../components/BrandLogo';
+import PaymentConfirmModal from '../components/PaymentConfirmModal';
 import { formatDate, formatMoney, daysUntil } from '../utils/date';
 
 export default function Dashboard() {
@@ -13,22 +15,43 @@ export default function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [forecast, setForecast] = useState(null);
   const [trend, setTrend] = useState(null);
+  const [trendTimeframe, setTrendTimeframe] = useState(12);
+  const [payingSub, setPayingSub] = useState(null);
   const [error, setError] = useState('');
 
   const currentCurrency = user?.baseCurrency || 'USD';
 
-  useEffect(() => {
+  function refresh() {
     if (!user) return;
     api.dashboardSummary(14, currentCurrency).then(setSummary).catch((err) => setError(err.message));
     api.dashboardForecast(12, currentCurrency).then(setForecast).catch((err) => setError(err.message));
-    api.dashboardTrend(12, currentCurrency).then(setTrend).catch((err) => setError(err.message));
-  }, [user, currentCurrency]);
+    api.dashboardTrend(trendTimeframe, currentCurrency).then(setTrend).catch((err) => setError(err.message));
+  }
+
+  useEffect(() => {
+    refresh();
+  }, [user, currentCurrency, trendTimeframe]);
+
+  useEffect(() => {
+    function onExternalRefresh() {
+      refresh();
+    }
+    window.addEventListener('subtrack:refresh', onExternalRefresh);
+    return () => window.removeEventListener('subtrack:refresh', onExternalRefresh);
+  }, [user, currentCurrency, trendTimeframe]);
+
+  async function handleConfirmPayment(paymentData) {
+    if (!payingSub) return;
+    await api.confirmPayment(payingSub.id, paymentData);
+    setPayingSub(null);
+    refresh();
+  }
 
   if (error) return <p className="text-sm text-rust">{error}</p>;
   if (!summary) return <p className="text-sm text-ink/50">Loading…</p>;
 
   const baseCurrency = summary.baseCurrency || currentCurrency;
-  const maxCategory = Math.max(1, ...summary.categoryBreakdown.map((c) => c.monthlySpend));
+  const pendingReminders = summary.pendingReminders || [];
 
   return (
     <div className="space-y-10">
@@ -39,6 +62,49 @@ export default function Dashboard() {
           <strong className="text-ink font-medium">{baseCurrency}</strong>.
         </p>
       </div>
+
+      {/* Actionable Due Reminders Banner */}
+      {pendingReminders.length > 0 && (
+        <div className="rounded-md border border-ledger/30 bg-ledger-light/50 p-4 shadow-2xs">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-ledger text-white text-sm">
+                🔔
+              </span>
+              <div>
+                <h3 className="font-display text-sm font-semibold text-ink">
+                  {pendingReminders.length} Renewal Reminder{pendingReminders.length === 1 ? '' : 's'} Due
+                </h3>
+                <p className="text-xs text-ink/70">
+                  Payments due shortly. Confirm once charged to advance cycles and log payment history.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {pendingReminders.slice(0, 2).map((r) => (
+                <button
+                  key={r.id}
+                  onClick={() =>
+                    setPayingSub({
+                      id: r.subscriptionId,
+                      name: r.subscriptionName,
+                      category: r.category,
+                      amount: r.amount,
+                      currency: r.currency,
+                      billingCycle: r.billingCycle,
+                      nextRenewalDate: r.dueDate,
+                    })
+                  }
+                  className="rounded bg-white border border-ledger/40 px-3 py-1 text-xs font-medium text-ledger-dark hover:bg-ledger hover:text-white transition-colors shadow-2xs"
+                >
+                  ✓ Confirm {r.subscriptionName} ({formatMoney(r.amount, r.currency)})
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
@@ -53,8 +119,9 @@ export default function Dashboard() {
         <StatCard label="Active subscriptions" value={summary.activeCount} />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <section>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Renewing soon */}
+        <section className="lg:col-span-5">
           <div className="flex items-baseline justify-between">
             <h2 className="font-display text-lg font-semibold">Renewing soon</h2>
             <Link to="/subscriptions" className="text-sm text-ledger hover:underline">See all</Link>
@@ -65,29 +132,39 @@ export default function Dashboard() {
             )}
             {summary.upcomingRenewals.map((s) => {
               const isDifferentCurrency = s.currency !== baseCurrency && s.convertedAmount;
+              const days = daysUntil(s.nextRenewalDate);
               return (
                 <div
                   key={s.id}
-                  className="flex items-center justify-between border-b border-line px-4 py-3 last:border-b-0 hover:bg-paper/30 transition-colors"
+                  className="flex items-center justify-between border-b border-line px-4 py-3 last:border-b-0 hover:bg-paper/30 transition-colors gap-3"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <BrandLogo name={s.name} category={s.category} size="sm" />
                     <div className="min-w-0">
                       <p className="font-medium truncate">{s.name}</p>
                       <p className="text-xs text-ink/50">
-                        {formatDate(s.nextRenewalDate)} · in {daysUntil(s.nextRenewalDate)}d
+                        {formatDate(s.nextRenewalDate)} · in {days}d
                       </p>
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className="tabular font-display font-semibold">
-                      {formatMoney(s.amount, s.currency)}
-                    </p>
-                    {isDifferentCurrency && (
-                      <p className="tabular text-[11px] text-ink/40">
-                        ≈ {formatMoney(s.convertedAmount, baseCurrency)}
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <div className="text-right">
+                      <p className="tabular font-display font-semibold text-xs sm:text-sm">
+                        {formatMoney(s.amount, s.currency)}
                       </p>
-                    )}
+                      {isDifferentCurrency && (
+                        <p className="tabular text-[11px] text-ink/40">
+                          ≈ {formatMoney(s.convertedAmount, baseCurrency)}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setPayingSub(s)}
+                      className="rounded bg-ledger-light border border-ledger/30 px-2 py-1 text-[11px] font-semibold text-ledger-dark hover:bg-ledger hover:text-white transition-colors"
+                      title="Confirm payment & roll over to next billing cycle"
+                    >
+                      ✓ Paid
+                    </button>
                   </div>
                 </div>
               );
@@ -95,39 +172,39 @@ export default function Dashboard() {
           </div>
         </section>
 
-        <section>
-          <h2 className="font-display text-lg font-semibold">Spend by category</h2>
-          <div className="mt-3 space-y-3 border border-line bg-white px-4 py-4 shadow-2xs">
-            {summary.categoryBreakdown.length === 0 && (
-              <p className="text-sm text-ink/50">Add a subscription to see the breakdown.</p>
-            )}
-            {summary.categoryBreakdown.map((c) => (
-              <div key={c.category}>
-                <div className="flex items-baseline justify-between text-sm">
-                  <span className="capitalize">{c.category}</span>
-                  <span className="tabular text-ink/60">
-                    {formatMoney(c.monthlySpend, baseCurrency)}/mo
-                  </span>
-                </div>
-                <div className="mt-1 h-1.5 w-full bg-ledger-light">
-                  <div
-                    className="h-1.5 bg-ledger"
-                    style={{ width: `${(c.monthlySpend / maxCategory) * 100}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+        {/* Spend by category with Interactive Donut Chart */}
+        <section className="lg:col-span-7">
+          <div className="flex items-baseline justify-between">
+            <h2 className="font-display text-lg font-semibold">Spend by category</h2>
+            <span className="text-xs text-ink/50">
+              {summary.categoryBreakdown.length} {summary.categoryBreakdown.length === 1 ? 'category' : 'categories'}
+            </span>
           </div>
+          <CategoryBreakdown
+            categories={summary.categoryBreakdown}
+            totalMonthly={summary.totalMonthly}
+            currency={baseCurrency}
+          />
         </section>
       </div>
 
       {trend && (
         <section>
-          <h2 className="font-display text-lg font-semibold">Spend trend</h2>
-          <p className="mt-1 text-sm text-ink/60">
-            What your recurring monthly spend in {baseCurrency} has been over the past year.
-          </p>
-          <TrendChart months={trend.months} currency={baseCurrency} />
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <div>
+              <h2 className="font-display text-lg font-semibold">Spend trend</h2>
+              <p className="mt-1 text-sm text-ink/60">
+                Track how your recurring monthly commitment evolves over time.
+              </p>
+            </div>
+          </div>
+          <TrendChart
+            months={trend.months}
+            summary={trend.summary}
+            currency={baseCurrency}
+            timeframe={trendTimeframe}
+            onTimeframeChange={setTrendTimeframe}
+          />
         </section>
       )}
 
@@ -166,6 +243,15 @@ export default function Dashboard() {
             ))}
           </div>
         </section>
+      )}
+
+      {/* Payment Confirmation Modal */}
+      {payingSub && (
+        <PaymentConfirmModal
+          subscription={payingSub}
+          onConfirm={handleConfirmPayment}
+          onCancel={() => setPayingSub(null)}
+        />
       )}
     </div>
   );

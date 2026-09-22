@@ -169,6 +169,20 @@ const BRAND_DOMAINS = {
   grubhub: 'grubhub.com',
 };
 
+export const CATEGORY_CHART_COLORS = {
+  streaming: '#6366F1', // Indigo
+  software: '#1F6F54',  // Subtrack Ledger Forest Green
+  fitness: '#F59E0B',   // Amber
+  news: '#0EA5E9',      // Sky blue
+  cloud: '#06B6D4',     // Cyan
+  gaming: '#8B5CF6',    // Purple
+  other: '#78716C',     // Warm stone
+};
+
+export function getCategoryChartColor(category = 'other') {
+  return CATEGORY_CHART_COLORS[category.toLowerCase()] || '#78716C';
+}
+
 const CATEGORY_COLORS = {
   streaming: { bg: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
   software: { bg: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
