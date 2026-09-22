@@ -3,15 +3,18 @@ import { query } from '../config/db.js';
 const COLUMNS = `
   id, user_id AS "userId", name, category, amount, currency,
   billing_cycle AS "billingCycle", next_renewal_date AS "nextRenewalDate",
-  status, notes, created_at AS "createdAt", updated_at AS "updatedAt"
+  status, notes,
+  COALESCE(reminder_days_before, 3) AS "reminderDaysBefore",
+  last_reminder_sent_at AS "lastReminderSentAt",
+  created_at AS "createdAt", updated_at AS "updatedAt"
 `;
 
 export const subscriptionModel = {
   async create(userId, data) {
     const { rows } = await query(
       `INSERT INTO subscriptions
-        (user_id, name, category, amount, currency, billing_cycle, next_renewal_date, status, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        (user_id, name, category, amount, currency, billing_cycle, next_renewal_date, status, notes, reminder_days_before)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING ${COLUMNS}`,
       [
         userId,
@@ -23,6 +26,7 @@ export const subscriptionModel = {
         data.nextRenewalDate,
         data.status,
         data.notes ?? null,
+        data.reminderDaysBefore ?? 3,
       ]
     );
     return rows[0];
@@ -49,6 +53,7 @@ export const subscriptionModel = {
       `UPDATE subscriptions SET
         name = $3, category = $4, amount = $5, currency = $6,
         billing_cycle = $7, next_renewal_date = $8, status = $9, notes = $10,
+        reminder_days_before = COALESCE($11, reminder_days_before),
         updated_at = now()
        WHERE id = $1 AND user_id = $2
        RETURNING ${COLUMNS}`,
@@ -63,6 +68,7 @@ export const subscriptionModel = {
         data.nextRenewalDate,
         data.status,
         data.notes ?? null,
+        data.reminderDaysBefore ?? null,
       ]
     );
     return rows[0] || null;
@@ -76,6 +82,18 @@ export const subscriptionModel = {
        WHERE id = $1 AND user_id = $2
        RETURNING ${COLUMNS}`,
       [id, userId, nextRenewalDate]
+    );
+    return rows[0] || null;
+  },
+
+  async updateReminderSentAt(userId, id, sentAt = new Date()) {
+    const { rows } = await query(
+      `UPDATE subscriptions SET
+        last_reminder_sent_at = $3,
+        updated_at = now()
+       WHERE id = $1 AND user_id = $2
+       RETURNING ${COLUMNS}`,
+      [id, userId, sentAt]
     );
     return rows[0] || null;
   },

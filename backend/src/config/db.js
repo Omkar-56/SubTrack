@@ -15,10 +15,53 @@ let schemaEnsured = false;
 async function ensureSchema() {
   if (schemaEnsured) return;
   try {
-    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS base_currency TEXT NOT NULL DEFAULT 'USD';`);
+    await pool.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS base_currency TEXT NOT NULL DEFAULT 'USD';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS reminder_days_before INT NOT NULL DEFAULT 3;
+      
+      DO $$ BEGIN
+        CREATE TYPE billing_cycle AS ENUM ('weekly', 'monthly', 'quarterly', 'yearly');
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$;
+
+      DO $$ BEGIN
+        CREATE TYPE subscription_status AS ENUM ('active', 'paused', 'cancelled');
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$;
+
+      ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS reminder_days_before INT NOT NULL DEFAULT 3;
+      ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS last_reminder_sent_at TIMESTAMPTZ;
+
+      CREATE TABLE IF NOT EXISTS payments (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        subscription_id UUID NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
+        amount NUMERIC(10, 2) NOT NULL,
+        currency TEXT NOT NULL DEFAULT 'USD',
+        paid_date DATE NOT NULL DEFAULT CURRENT_DATE,
+        billing_cycle billing_cycle NOT NULL DEFAULT 'monthly',
+        notes TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+
+      CREATE TABLE IF NOT EXISTS reminders (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        subscription_id UUID NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
+        due_date DATE NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        sent_at TIMESTAMPTZ,
+        channel TEXT NOT NULL DEFAULT 'in_app',
+        message TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+    `);
     schemaEnsured = true;
-  } catch {
+  } catch (err) {
     // If users table is not created yet, migrate script will handle it
+    if (env.nodeEnv === 'development') {
+      console.log('ensureSchema note:', err.message);
+    }
   }
 }
 
