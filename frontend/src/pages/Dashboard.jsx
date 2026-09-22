@@ -4,7 +4,6 @@ import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import StatCard from '../components/StatCard';
 import ForecastChart from '../components/ForecastChart';
-import TrendChart from '../components/TrendChart';
 import CategoryBreakdown from '../components/CategoryBreakdown';
 import BrandLogo from '../components/BrandLogo';
 import PaymentConfirmModal from '../components/PaymentConfirmModal';
@@ -14,8 +13,6 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [summary, setSummary] = useState(null);
   const [forecast, setForecast] = useState(null);
-  const [trend, setTrend] = useState(null);
-  const [trendTimeframe, setTrendTimeframe] = useState(12);
   const [payingSub, setPayingSub] = useState(null);
   const [error, setError] = useState('');
 
@@ -25,12 +22,11 @@ export default function Dashboard() {
     if (!user) return;
     api.dashboardSummary(14, currentCurrency).then(setSummary).catch((err) => setError(err.message));
     api.dashboardForecast(12, currentCurrency).then(setForecast).catch((err) => setError(err.message));
-    api.dashboardTrend(trendTimeframe, currentCurrency).then(setTrend).catch((err) => setError(err.message));
   }
 
   useEffect(() => {
     refresh();
-  }, [user, currentCurrency, trendTimeframe]);
+  }, [user, currentCurrency]);
 
   useEffect(() => {
     function onExternalRefresh() {
@@ -38,7 +34,7 @@ export default function Dashboard() {
     }
     window.addEventListener('subtrack:refresh', onExternalRefresh);
     return () => window.removeEventListener('subtrack:refresh', onExternalRefresh);
-  }, [user, currentCurrency, trendTimeframe]);
+  }, [user, currentCurrency]);
 
   async function handleConfirmPayment(paymentData) {
     if (!payingSub) return;
@@ -58,7 +54,7 @@ export default function Dashboard() {
       <div>
         <h1 className="font-display text-2xl font-semibold">Overview</h1>
         <p className="mt-1 text-sm text-ink/60">
-          What your subscriptions are costing you, normalized in{' '}
+          What your subscriptions are costing you, normalized in real-time in{' '}
           <strong className="text-ink font-medium">{baseCurrency}</strong>.
         </p>
       </div>
@@ -187,26 +183,6 @@ export default function Dashboard() {
           />
         </section>
       </div>
-
-      {trend && (
-        <section>
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <div>
-              <h2 className="font-display text-lg font-semibold">Spend trend</h2>
-              <p className="mt-1 text-sm text-ink/60">
-                Track how your recurring monthly commitment evolves over time.
-              </p>
-            </div>
-          </div>
-          <TrendChart
-            months={trend.months}
-            summary={trend.summary}
-            currency={baseCurrency}
-            timeframe={trendTimeframe}
-            onTimeframeChange={setTrendTimeframe}
-          />
-        </section>
-      )}
 
       {forecast && (
         <section>
