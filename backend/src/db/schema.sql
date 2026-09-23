@@ -38,15 +38,27 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   notes TEXT,
   reminder_days_before INT NOT NULL DEFAULT 3,
   last_reminder_sent_at TIMESTAMPTZ,
+  -- Free-Trial Expiry Sentinel & Cancellation Deadline columns
+  is_free_trial BOOLEAN NOT NULL DEFAULT FALSE,
+  trial_end_date DATE,
+  cancellation_deadline DATE,
+  post_trial_amount NUMERIC(10, 2),
+  post_trial_currency TEXT DEFAULT 'USD',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS reminder_days_before INT NOT NULL DEFAULT 3;
 ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS last_reminder_sent_at TIMESTAMPTZ;
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS is_free_trial BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS trial_end_date DATE;
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS cancellation_deadline DATE;
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS post_trial_amount NUMERIC(10, 2);
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS post_trial_currency TEXT DEFAULT 'USD';
 
 CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_next_renewal ON subscriptions(next_renewal_date);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_trial ON subscriptions(is_free_trial, trial_end_date);
 
 CREATE TABLE IF NOT EXISTS price_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

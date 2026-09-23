@@ -21,7 +21,10 @@ export const reminderModel = {
 
   async findPendingForUser(userId) {
     const { rows } = await query(
-      `SELECT ${REMINDER_COLUMNS}, s.name AS "subscriptionName", s.amount, s.currency, s.category, s.billing_cycle AS "billingCycle"
+      `SELECT ${REMINDER_COLUMNS}, s.name AS "subscriptionName", s.amount, s.currency, s.category, s.billing_cycle AS "billingCycle",
+              COALESCE(s.is_free_trial, FALSE) AS "isFreeTrial", s.trial_end_date AS "trialEndDate",
+              s.cancellation_deadline AS "cancellationDeadline", s.post_trial_amount AS "postTrialAmount",
+              s.post_trial_currency AS "postTrialCurrency"
        FROM reminders r
        JOIN subscriptions s ON s.id = r.subscription_id
        WHERE r.user_id = $1 AND r.status = 'pending' AND s.status = 'active'

@@ -31,8 +31,16 @@ async function ensureSchema() {
 
       ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS reminder_days_before INT NOT NULL DEFAULT 3;
       ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS last_reminder_sent_at TIMESTAMPTZ;
+      ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS is_free_trial BOOLEAN NOT NULL DEFAULT FALSE;
+      ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS trial_end_date DATE;
+      ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS cancellation_deadline DATE;
+      ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS post_trial_amount NUMERIC(10, 2);
+      ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS post_trial_currency TEXT DEFAULT 'USD';
 
-      CREATE TABLE IF NOT EXISTS payments (\n        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      CREATE INDEX IF NOT EXISTS idx_subscriptions_trial ON subscriptions(is_free_trial, trial_end_date);
+
+      CREATE TABLE IF NOT EXISTS payments (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         subscription_id UUID NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
         amount NUMERIC(10, 2) NOT NULL,
