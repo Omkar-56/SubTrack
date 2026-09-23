@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ReminderBell from './ReminderBell';
 import PaymentConfirmModal from './PaymentConfirmModal';
@@ -26,33 +26,36 @@ const linkClass = ({ isActive }) =>
 export default function Navbar() {
   const { user, setBaseCurrency, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [payingSub, setPayingSub] = useState(null);
+
+  const isLandingPage = !user && location.pathname === '/';
 
   async function handleConfirmPayment(paymentData) {
     if (!payingSub) return;
     await api.confirmPayment(payingSub.id, paymentData);
     setPayingSub(null);
-    // Trigger page refresh if on dashboard or subscriptions
     window.dispatchEvent(new CustomEvent('subtrack:refresh'));
   }
 
   return (
     <>
-      <header className="border-b border-line bg-white/70 backdrop-blur-xs sticky top-0 z-30">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3.5">
+      <header className="border-b border-line bg-white/80 backdrop-blur-xs sticky top-0 z-30">
+        <div className={`mx-auto flex items-center justify-between px-6 sm:px-10 lg:px-14 py-3.5 ${isLandingPage ? 'max-w-7xl' : 'max-w-5xl'}`}>
           <div className="flex items-center gap-8">
-            <NavLink to="/" className="font-display text-lg font-bold tracking-tight text-ink flex items-center gap-2">
+            <NavLink to={user ? '/dashboard' : '/'} className="font-display text-lg font-bold tracking-tight text-ink flex items-center gap-2">
               <span className="inline-block w-2.5 h-2.5 rounded-full bg-ledger"></span>
               SubTrack
             </NavLink>
             {user && (
               <nav className="flex gap-6">
-                <NavLink to="/" end className={linkClass}>Overview</NavLink>
+                <NavLink to="/dashboard" className={linkClass}>Overview</NavLink>
                 <NavLink to="/subscriptions" className={linkClass}>Subscriptions</NavLink>
               </nav>
             )}
           </div>
-          {user && (
+
+          {user ? (
             <div className="flex items-center gap-3 sm:gap-4">
               {/* Due Date Reminders Bell */}
               <ReminderBell onConfirmPayment={(sub) => setPayingSub(sub)} />
@@ -86,6 +89,21 @@ export default function Navbar() {
               >
                 Sign out
               </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-4">
+              <Link
+                to="/login"
+                className="text-xs font-semibold text-ink/70 hover:text-ink transition-colors"
+              >
+                Sign In
+              </Link>
+              <Link
+                to="/register"
+                className="rounded-sm bg-ledger px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-ledger-dark transition-colors"
+              >
+                Get Started Free
+              </Link>
             </div>
           )}
         </div>
