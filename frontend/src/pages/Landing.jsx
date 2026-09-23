@@ -3,6 +3,11 @@ import BrandLogo from '../components/BrandLogo';
 
 const FEATURES = [
   {
+    icon: '🛡️',
+    title: 'Free-Trial Expiry Sentinel',
+    desc: 'Never get hit by surprise trial conversions. Set exact cancellation deadlines, countdown alerts, and cancel with direct links before paying.',
+  },
+  {
     icon: '🔔',
     title: 'Smart Renewal Reminders',
     desc: 'Proactive alerts before bills hit your card. Confirm payments in 1-click to advance billing cycles and log transaction history.',
@@ -27,11 +32,6 @@ const FEATURES = [
     title: 'Waste & Savings Meter',
     desc: 'Track monthly and annual money saved from cancelled or paused subscriptions. Watch your financial leaks close in real time.',
   },
-  {
-    icon: '⚡',
-    title: 'Price Hike Detection',
-    desc: 'Automatic alerts whenever a service stealthily increases recurring subscription pricing on your plan.',
-  },
 ];
 
 const SAMPLE_COMPANIES = [
@@ -41,7 +41,7 @@ const SAMPLE_COMPANIES = [
 export default function Landing() {
   return (
     <div className="w-full space-y-24 pb-16">
-      {/*
+      {/* 
         Hero Section:
         True full-bleed edge-to-edge background with 0 gaps on left & right
       */}
@@ -60,7 +60,7 @@ export default function Landing() {
         <div className="relative z-10 mx-auto max-w-[1440px] w-full px-4 sm:px-6 lg:px-8 py-14 sm:py-20 lg:py-24 flex items-center">
           <div className="w-full max-w-[490px] space-y-6 text-left">
             {/* Main Headline */}
-            <h1 className="font-display text-4xl sm:text-5xl lg:text-[52px] font-bold tracking-tight text-ink leading-[1.12]">
+            <h1 className="font-display text-4xl sm:text-5xl lg:text-[54px] font-bold tracking-tight text-ink leading-[1.12]">
               Track subscriptions. <br />
               <span className="text-ledger">Stay in control.</span>
             </h1>
@@ -68,7 +68,7 @@ export default function Landing() {
             {/* Subtitle */}
             <p className="max-w-md text-base sm:text-lg text-ink/75 leading-relaxed">
               The intentional, high-clarity subscription ledger. Track recurring services,
-              get alerted before due dates, and cancel unwanted bills with 1-click direct guides.
+              get alerted before trial expiry & due dates, and cancel unwanted bills with 1-click direct guides.
             </p>
 
             {/* CTA Button */}

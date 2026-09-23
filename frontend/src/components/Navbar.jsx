@@ -3,6 +3,7 @@ import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ReminderBell from './ReminderBell';
 import PaymentConfirmModal from './PaymentConfirmModal';
+import CancellationGuideModal from './CancellationGuideModal';
 import { api } from '../api/client';
 
 const CURRENCIES = [
@@ -28,6 +29,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [payingSub, setPayingSub] = useState(null);
+  const [guideSub, setGuideSub] = useState(null);
 
   const isLandingPage = !user && location.pathname === '/';
 
@@ -36,6 +38,33 @@ export default function Navbar() {
     await api.confirmPayment(payingSub.id, paymentData);
     setPayingSub(null);
     window.dispatchEvent(new CustomEvent('subtrack:refresh'));
+  }
+
+  async function handleConvertTrial(sub) {
+    try {
+      await api.convertTrial(sub.id);
+      window.dispatchEvent(new CustomEvent('subtrack:refresh'));
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async function handleStatusChange(subscription, newStatus) {
+    try {
+      await api.updateSubscription(subscription.id, {
+        name: subscription.name,
+        category: subscription.category || 'other',
+        amount: Number(subscription.amount),
+        currency: subscription.currency || 'USD',
+        billingCycle: subscription.billingCycle || 'monthly',
+        nextRenewalDate: String(subscription.nextRenewalDate).slice(0, 10),
+        status: newStatus,
+        notes: subscription.notes || '',
+      });
+      window.dispatchEvent(new CustomEvent('subtrack:refresh'));
+    } catch (err) {
+      alert(err.message);
+    }
   }
 
   return (
@@ -57,8 +86,12 @@ export default function Navbar() {
 
           {user ? (
             <div className="flex items-center gap-3 sm:gap-4">
-              {/* Due Date Reminders Bell */}
-              <ReminderBell onConfirmPayment={(sub) => setPayingSub(sub)} />
+              {/* Due Date Reminders Bell & Trial Sentinel */}
+              <ReminderBell
+                onConfirmPayment={(sub) => setPayingSub(sub)}
+                onCancelGuide={(sub) => setGuideSub(sub)}
+                onConvertTrial={(sub) => handleConvertTrial(sub)}
+              />
 
               {/* Currency Selector */}
               <div className="flex items-center gap-1.5 text-xs text-ink/60">
@@ -85,7 +118,7 @@ export default function Navbar() {
                   logout();
                   navigate('/login');
                 }}
-                className="text-xs text-ink/60 hover:text-rust transition-colors"
+                className="text-xs text-ink/60 hover:text-rust transition-colors cursor-pointer"
               >
                 Sign out
               </button>
@@ -114,6 +147,14 @@ export default function Navbar() {
           subscription={payingSub}
           onConfirm={handleConfirmPayment}
           onCancel={() => setPayingSub(null)}
+        />
+      )}
+
+      {guideSub && (
+        <CancellationGuideModal
+          subscription={guideSub}
+          onClose={() => setGuideSub(null)}
+          onStatusChange={handleStatusChange}
         />
       )}
     </>

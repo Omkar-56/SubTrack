@@ -90,6 +90,15 @@ export default function Subscriptions() {
     refresh();
   }
 
+  async function handleConvertTrial(subscription) {
+    try {
+      await api.convertTrial(subscription.id);
+      refresh();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   async function handleAdvance(subscription) {
     try {
       await api.advanceSubscription(subscription.id);
@@ -117,6 +126,11 @@ export default function Subscriptions() {
         nextRenewalDate: String(subscription.nextRenewalDate).slice(0, 10),
         status: newStatus,
         notes: subscription.notes || '',
+        isFreeTrial: Boolean(subscription.isFreeTrial),
+        trialEndDate: subscription.trialEndDate ? String(subscription.trialEndDate).slice(0, 10) : null,
+        cancellationDeadline: subscription.cancellationDeadline ? String(subscription.cancellationDeadline).slice(0, 10) : null,
+        postTrialAmount: subscription.postTrialAmount !== null && subscription.postTrialAmount !== undefined ? Number(subscription.postTrialAmount) : null,
+        postTrialCurrency: subscription.postTrialCurrency || subscription.currency,
       });
       refresh();
     } catch (err) {
@@ -140,7 +154,8 @@ export default function Subscriptions() {
   const counts = useMemo(() => {
     return {
       all: subscriptions.length,
-      active: subscriptions.filter((s) => s.status === 'active').length,
+      active: subscriptions.filter((s) => s.status === 'active' && !s.isFreeTrial).length,
+      trials: subscriptions.filter((s) => s.isFreeTrial && s.status === 'active').length,
       paused: subscriptions.filter((s) => s.status === 'paused').length,
       cancelled: subscriptions.filter((s) => s.status === 'cancelled').length,
     };
@@ -151,7 +166,11 @@ export default function Subscriptions() {
     return subscriptions
       .filter((s) => {
         // Status filter
-        if (statusFilter !== 'all' && s.status !== statusFilter) return false;
+        if (statusFilter === 'trials') {
+          if (!s.isFreeTrial || s.status !== 'active') return false;
+        } else if (statusFilter !== 'all' && s.status !== statusFilter) {
+          return false;
+        }
 
         // Category filter
         if (categoryFilter !== 'all' && s.category.toLowerCase() !== categoryFilter.toLowerCase()) {
@@ -174,10 +193,14 @@ export default function Subscriptions() {
       })
       .sort((a, b) => {
         if (sortBy === 'renewal_asc') {
-          return new Date(a.nextRenewalDate) - new Date(b.nextRenewalDate);
+          const dateA = a.isFreeTrial && a.cancellationDeadline ? a.cancellationDeadline : a.nextRenewalDate;
+          const dateB = b.isFreeTrial && b.cancellationDeadline ? b.cancellationDeadline : b.nextRenewalDate;
+          return new Date(dateA) - new Date(dateB);
         }
         if (sortBy === 'renewal_desc') {
-          return new Date(b.nextRenewalDate) - new Date(a.nextRenewalDate);
+          const dateA = a.isFreeTrial && a.cancellationDeadline ? a.cancellationDeadline : a.nextRenewalDate;
+          const dateB = b.isFreeTrial && b.cancellationDeadline ? b.cancellationDeadline : b.nextRenewalDate;
+          return new Date(dateB) - new Date(dateA);
         }
         if (sortBy === 'cost_desc') {
           return monthlyEquivalent(b) - monthlyEquivalent(a);
@@ -227,27 +250,30 @@ export default function Subscriptions() {
         <div>
           <h1 className="font-display text-2xl font-semibold text-ink">Subscriptions</h1>
           <p className="mt-1 text-sm text-ink/60">
-            Everything you're paying for, in one searchable ledger.
+            Everything you're paying for or trialing, in one searchable ledger.
           </p>
         </div>
-        {!showForm && !editing && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="rounded-sm bg-ledger px-4 py-2 text-sm font-medium text-white shadow-2xs hover:bg-ledger-dark transition-colors"
-          >
-            + Add subscription
-          </button>
-        )}
+        <button
+          onClick={() => setShowForm(true)}
+          className="rounded-sm bg-ledger px-4 py-2 text-sm font-medium text-white shadow-2xs hover:bg-ledger-dark transition-colors cursor-pointer"
+        >
+          + Add subscription
+        </button>
       </div>
 
       {error && <p className="text-sm text-rust">{error}</p>}
 
       {showForm && (
-        <SubscriptionForm onSubmit={handleCreate} onCancel={() => setShowForm(false)} />
+        <SubscriptionForm
+          defaultCurrency={baseCurrency}
+          onSubmit={handleCreate}
+          onCancel={() => setShowForm(false)}
+        />
       )}
 
       {editing && (
         <SubscriptionForm
+          defaultCurrency={baseCurrency}
           initial={{
             name: editing.name,
             category: editing.category,
@@ -257,6 +283,12 @@ export default function Subscriptions() {
             nextRenewalDate: editing.nextRenewalDate?.slice(0, 10),
             status: editing.status,
             notes: editing.notes || '',
+            reminderDaysBefore: editing.reminderDaysBefore || 3,
+            isFreeTrial: Boolean(editing.isFreeTrial),
+            trialEndDate: editing.trialEndDate ? String(editing.trialEndDate).slice(0, 10) : '',
+            cancellationDeadline: editing.cancellationDeadline ? String(editing.cancellationDeadline).slice(0, 10) : '',
+            postTrialAmount: editing.postTrialAmount,
+            postTrialCurrency: editing.postTrialCurrency || editing.currency,
           }}
           onSubmit={handleUpdate}
           onCancel={() => setEditing(null)}
@@ -267,18 +299,19 @@ export default function Subscriptions() {
       <div className="space-y-3 rounded-t border border-line bg-white p-4 shadow-2xs">
         {/* Top Row: Search & Status Tabs */}
         <div className="flex flex-wrap items-center justify-between gap-3">
-          {/* Status Tabs */}
+          {/* Status Tabs including Free Trials */}
           <div className="inline-flex rounded-sm bg-paper p-0.5 text-xs font-medium border border-line">
             {[
               { id: 'all', label: 'All', count: counts.all },
-              { id: 'active', label: 'Active', count: counts.active },
+              { id: 'active', label: 'Active Paid', count: counts.active },
+              { id: 'trials', label: '🛡️ Trials', count: counts.trials },
               { id: 'paused', label: 'Paused', count: counts.paused },
               { id: 'cancelled', label: 'Cancelled', count: counts.cancelled },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setStatusFilter(tab.id)}
-                className={`flex items-center gap-1.5 rounded-xs px-3 py-1.5 transition-all ${
+                className={`flex items-center gap-1.5 rounded-xs px-3 py-1.5 transition-all cursor-pointer ${
                   statusFilter === tab.id
                     ? 'bg-white text-ink shadow-2xs font-semibold'
                     : 'text-ink/60 hover:text-ink'
@@ -287,7 +320,11 @@ export default function Subscriptions() {
                 <span>{tab.label}</span>
                 <span
                   className={`rounded-full px-1.5 py-0.2 text-[10px] ${
-                    statusFilter === tab.id ? 'bg-ledger-light text-ledger-dark' : 'bg-line/60 text-ink/50'
+                    statusFilter === tab.id
+                      ? tab.id === 'trials'
+                        ? 'bg-amber text-white'
+                        : 'bg-ledger-light text-ledger-dark'
+                      : 'bg-line/60 text-ink/50'
                   }`}
                 >
                   {tab.count}
@@ -321,7 +358,7 @@ export default function Subscriptions() {
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="absolute right-2.5 top-1.5 text-xs text-ink/40 hover:text-ink"
+                className="absolute right-2.5 top-1.5 text-xs text-ink/40 hover:text-ink cursor-pointer"
               >
                 ✕
               </button>
@@ -367,8 +404,8 @@ export default function Subscriptions() {
                 onChange={(e) => setSortBy(e.target.value)}
                 className="rounded-sm border border-line bg-paper/30 px-2.5 py-1 text-ink outline-none hover:border-line focus:border-ledger cursor-pointer"
               >
-                <option value="renewal_asc">Next renewal (soonest)</option>
-                <option value="renewal_desc">Next renewal (furthest)</option>
+                <option value="renewal_asc">Next renewal / deadline (soonest)</option>
+                <option value="renewal_desc">Next renewal / deadline (furthest)</option>
                 <option value="cost_desc">Cost (highest/mo)</option>
                 <option value="cost_asc">Cost (lowest/mo)</option>
                 <option value="name_asc">Name (A → Z)</option>
@@ -391,7 +428,7 @@ export default function Subscriptions() {
             {hasActiveFilters && (
               <button
                 onClick={resetFilters}
-                className="font-medium text-rust hover:underline"
+                className="font-medium text-rust hover:underline cursor-pointer"
               >
                 Reset filters
               </button>
@@ -408,12 +445,12 @@ export default function Subscriptions() {
             <p className="mt-1 text-xs text-ink/40">
               {hasActiveFilters
                 ? 'Try tweaking or resetting your search and filter criteria.'
-                : 'Add your first subscription to get started.'}
+                : 'Add your first subscription or free trial to get started.'}
             </p>
             {hasActiveFilters && (
               <button
                 onClick={resetFilters}
-                className="mt-3 rounded-sm border border-line bg-paper px-3 py-1.5 text-xs text-ink hover:bg-line/40 transition-colors"
+                className="mt-3 rounded-sm border border-line bg-paper px-3 py-1.5 text-xs text-ink hover:bg-line/40 transition-colors cursor-pointer"
               >
                 Clear all filters
               </button>
@@ -432,6 +469,7 @@ export default function Subscriptions() {
               setEditing(sub);
             }}
             onAdvance={handleAdvance}
+            onConvertTrial={handleConvertTrial}
             onConfirmPayment={(sub) => setPayingSub(sub)}
             onCancelGuide={(sub) => setGuideSub(sub)}
             onViewPayments={(sub) => setHistorySub(sub)}

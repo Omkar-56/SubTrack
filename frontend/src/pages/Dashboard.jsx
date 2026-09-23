@@ -7,6 +7,7 @@ import ForecastChart from '../components/ForecastChart';
 import CategoryBreakdown from '../components/CategoryBreakdown';
 import BrandLogo from '../components/BrandLogo';
 import PaymentConfirmModal from '../components/PaymentConfirmModal';
+import CancellationGuideModal from '../components/CancellationGuideModal';
 import { formatDate, formatMoney, daysUntil } from '../utils/date';
 
 export default function Dashboard() {
@@ -14,6 +15,7 @@ export default function Dashboard() {
   const [summary, setSummary] = useState(null);
   const [forecast, setForecast] = useState(null);
   const [payingSub, setPayingSub] = useState(null);
+  const [guideSub, setGuideSub] = useState(null);
   const [error, setError] = useState('');
 
   const currentCurrency = user?.baseCurrency || 'USD';
@@ -43,11 +45,40 @@ export default function Dashboard() {
     refresh();
   }
 
+  async function handleConvertTrial(sub) {
+    try {
+      await api.convertTrial(sub.id);
+      refresh();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function handleStatusChange(subscription, newStatus) {
+    try {
+      await api.updateSubscription(subscription.id, {
+        name: subscription.name,
+        category: subscription.category || 'other',
+        amount: Number(subscription.amount),
+        currency: subscription.currency || 'USD',
+        billingCycle: subscription.billingCycle || 'monthly',
+        nextRenewalDate: String(subscription.nextRenewalDate).slice(0, 10),
+        status: newStatus,
+        notes: subscription.notes || '',
+      });
+      setGuideSub(null);
+      refresh();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   if (error) return <p className="text-sm text-rust">{error}</p>;
   if (!summary) return <p className="text-sm text-ink/50">Loading…</p>;
 
   const baseCurrency = summary.baseCurrency || currentCurrency;
   const pendingReminders = summary.pendingReminders || [];
+  const activeTrials = summary.activeTrials || [];
   const savings = summary.savings || {
     monthlySaved: 0,
     yearlySaved: 0,
@@ -64,6 +95,93 @@ export default function Dashboard() {
           <strong className="text-ink font-medium">{baseCurrency}</strong>.
         </p>
       </div>
+
+      {/* Free-Trial Expiry Sentinel Banner */}
+      {activeTrials.length > 0 && (
+        <div className="rounded-md border border-amber/40 bg-amber-light/40 p-4 shadow-2xs">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-amber text-white text-base shadow-xs">
+                🛡️
+              </span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-display text-sm font-bold text-ink">
+                    Free-Trial Expiry Sentinel ({activeTrials.length} Active {activeTrials.length === 1 ? 'Trial' : 'Trials'})
+                  </h3>
+                  <span className="rounded bg-amber px-1.5 py-0.2 text-[10px] font-bold text-white uppercase tracking-wide">
+                    Live Sentinel
+                  </span>
+                </div>
+                <p className="text-xs text-ink/75">
+                  Cancellation deadlines detected. Cancel before the deadline to avoid auto-converting to full-price recurring charges.
+                </p>
+              </div>
+            </div>
+
+            <Link
+              to="/subscriptions"
+              className="text-xs font-semibold text-amber-dark hover:underline flex items-center gap-1"
+            >
+              <span>Manage all trials</span>
+              <span>→</span>
+            </Link>
+          </div>
+
+          <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 pt-3 border-t border-amber/25">
+            {activeTrials.map((t) => {
+              const deadline = t.effectiveDeadline;
+              const days = t.daysLeft;
+              const isUrgent = days <= 2;
+
+              return (
+                <div
+                  key={t.id}
+                  className="flex items-center justify-between rounded bg-white/90 border border-amber/30 p-3 shadow-2xs hover:bg-white transition-colors gap-3"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <BrandLogo name={t.name} category={t.category} size="sm" />
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <p className="font-semibold text-xs text-ink truncate">{t.name}</p>
+                        <span
+                          className={`rounded px-1.5 py-0.2 text-[10px] font-bold ${
+                            isUrgent ? 'bg-rust text-white animate-pulse' : 'bg-amber-light text-amber-dark'
+                          }`}
+                        >
+                          {days <= 0 ? 'Cutoff TODAY!' : `${days}d left`}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-ink/65 mt-0.5">
+                        Cancel cutoff: <strong>{formatDate(deadline)}</strong>
+                      </p>
+                      <p className="text-[10px] text-ink/50 mt-0.2">
+                        Post-trial: {formatMoney(t.postTrialAmount || t.amount, t.postTrialCurrency || t.currency)}/{t.billingCycle}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      onClick={() => setGuideSub(t)}
+                      className="rounded bg-rust px-2.5 py-1 text-xs font-semibold text-white shadow-2xs hover:bg-rust-dark transition-colors cursor-pointer"
+                    >
+                      Cancel Guide
+                    </button>
+                    <button
+                      onClick={() => handleConvertTrial(t)}
+                      className="rounded border border-line bg-paper px-2 py-1 text-xs font-medium text-ink/70 hover:bg-ledger-light hover:text-ledger-dark transition-colors cursor-pointer"
+                      title="Keep this subscription and convert to regular cycle"
+                    >
+                      Keep Sub
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Actionable Due Reminders Banner */}
       {pendingReminders.length > 0 && (
@@ -98,7 +216,7 @@ export default function Dashboard() {
                       nextRenewalDate: r.dueDate,
                     })
                   }
-                  className="rounded bg-white border border-ledger/40 px-3 py-1 text-xs font-medium text-ledger-dark hover:bg-ledger hover:text-white transition-colors shadow-2xs"
+                  className="rounded bg-white border border-ledger/40 px-3 py-1 text-xs font-medium text-ledger-dark hover:bg-ledger hover:text-white transition-colors shadow-2xs cursor-pointer"
                 >
                   ✓ Confirm {r.subscriptionName} ({formatMoney(r.amount, r.currency)})
                 </button>
@@ -124,7 +242,7 @@ export default function Dashboard() {
         <StatCard
           label="Active subscriptions"
           value={summary.activeCount}
-          sublabel={`${summary.totalCount || summary.activeCount} total tracked`}
+          sublabel={`${summary.trialsCount || 0} active trial${summary.trialsCount === 1 ? '' : 's'}`}
         />
         <StatCard
           label="Monthly savings"
@@ -175,7 +293,7 @@ export default function Dashboard() {
                     </div>
                     <button
                       onClick={() => setPayingSub(s)}
-                      className="rounded bg-ledger-light border border-ledger/30 px-2 py-1 text-[11px] font-semibold text-ledger-dark hover:bg-ledger hover:text-white transition-colors"
+                      className="rounded bg-ledger-light border border-ledger/30 px-2 py-1 text-[11px] font-semibold text-ledger-dark hover:bg-ledger hover:text-white transition-colors cursor-pointer"
                       title="Confirm payment & roll over to next billing cycle"
                     >
                       ✓ Paid
@@ -219,24 +337,6 @@ export default function Dashboard() {
           <p className="mt-1 text-sm text-ink/60">
             These went up in the last 30 days — worth a second look.
           </p>
-          <div className="mt-3 border border-rust/30 bg-rust-light">
-            {summary.recentPriceIncreases.map((p) => (
-              <div key={p.id} className="flex items-center justify-between border-b border-rust/20 px-4 py-3 last:border-b-0">
-                <div className="flex items-center gap-3 min-w-0">
-                  <BrandLogo name={p.name} category="other" size="sm" />
-                  <div className="min-w-0">
-                    <p className="font-medium truncate">{p.name}</p>
-                    <p className="text-xs text-ink/50">{formatDate(p.changedAt)}</p>
-                  </div>
-                </div>
-                <p className="tabular text-sm shrink-0">
-                  <span className="text-ink/50 line-through">{formatMoney(p.oldAmount, p.currency)}</span>
-                  {' → '}
-                  <span className="font-display font-semibold text-rust">{formatMoney(p.newAmount, p.currency)}</span>
-                </p>
-              </div>
-            ))}
-          </div>
         </section>
       )}
 
@@ -246,6 +346,15 @@ export default function Dashboard() {
           subscription={payingSub}
           onConfirm={handleConfirmPayment}
           onCancel={() => setPayingSub(null)}
+        />
+      )}
+
+      {/* Cancellation Guide Modal */}
+      {guideSub && (
+        <CancellationGuideModal
+          subscription={guideSub}
+          onClose={() => setGuideSub(null)}
+          onStatusChange={handleStatusChange}
         />
       )}
     </div>
