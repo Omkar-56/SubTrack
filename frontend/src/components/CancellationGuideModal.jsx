@@ -6,6 +6,14 @@ export default function CancellationGuideModal({ subscription, onClose, onStatus
   if (!subscription) return null;
 
   const guide = getCancellationGuide(subscription.name, subscription.category);
+  const isTrial = Boolean(subscription.isFreeTrial);
+  const deadline = isTrial
+    ? subscription.cancellationDeadline || subscription.trialEndDate || subscription.nextRenewalDate
+    : subscription.nextRenewalDate;
+  const chargeAmount = isTrial && subscription.postTrialAmount !== null && subscription.postTrialAmount !== undefined
+    ? subscription.postTrialAmount
+    : subscription.amount;
+  const chargeCurrency = isTrial && subscription.postTrialCurrency ? subscription.postTrialCurrency : subscription.currency;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-xs p-4">
@@ -19,23 +27,28 @@ export default function CancellationGuideModal({ subscription, onClose, onStatus
                 <h3 className="font-display text-base font-semibold text-ink">
                   How to Cancel {subscription.name}
                 </h3>
-                {guide.difficulty && (
+                {isTrial ? (
+                  <span className="rounded bg-amber-light px-2 py-0.5 text-[10px] font-bold text-amber border border-amber/30">
+                    🛡️ Trial Cutoff
+                  </span>
+                ) : guide.difficulty ? (
                   <span className="rounded bg-paper px-2 py-0.5 text-[10px] font-medium text-ink/60 border border-line">
                     {guide.difficulty}
                   </span>
-                )}
+                ) : null}
               </div>
               <p className="text-xs text-ink/60 mt-0.5">
-                Next renewal: <strong>{formatDate(subscription.nextRenewalDate)}</strong> · Saving{' '}
+                {isTrial ? 'Cancel before: ' : 'Next renewal: '}
+                <strong>{formatDate(deadline)}</strong> · Saving{' '}
                 <strong className="text-ledger-dark">
-                  {formatMoney(subscription.amount, subscription.currency)}/{subscription.billingCycle}
+                  {formatMoney(chargeAmount, chargeCurrency)}/{subscription.billingCycle || 'mo'}
                 </strong>
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded p-1 text-ink/40 hover:bg-stone-100 hover:text-ink transition-colors"
+            className="rounded p-1 text-ink/40 hover:bg-stone-100 hover:text-ink transition-colors cursor-pointer"
           >
             ✕
           </button>
@@ -98,14 +111,14 @@ export default function CancellationGuideModal({ subscription, onClose, onStatus
                   onStatusChange(subscription, 'cancelled');
                   onClose();
                 }}
-                className="rounded border border-rust/40 bg-rust-light px-3 py-1.5 text-xs font-semibold text-rust hover:bg-rust hover:text-white transition-colors"
+                className="rounded border border-rust/40 bg-rust-light px-3 py-1.5 text-xs font-semibold text-rust hover:bg-rust hover:text-white transition-colors cursor-pointer"
               >
                 Mark as Cancelled
               </button>
             )}
             <button
               onClick={onClose}
-              className="rounded border border-line bg-paper px-3 py-1.5 text-xs font-medium text-ink hover:bg-stone-100 transition-colors"
+              className="rounded border border-line bg-paper px-3 py-1.5 text-xs font-medium text-ink hover:bg-stone-100 transition-colors cursor-pointer"
             >
               Done
             </button>
