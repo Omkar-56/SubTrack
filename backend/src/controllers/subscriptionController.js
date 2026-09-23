@@ -23,6 +23,11 @@ export const subscriptionController = {
     res.json({ subscription });
   }),
 
+  convertTrial: asyncHandler(async (req, res) => {
+    const subscription = await subscriptionService.convertTrial(req.user.id, req.params.id, req.body?.nextRenewalDate);
+    res.json({ subscription });
+  }),
+
   advanceCycle: asyncHandler(async (req, res) => {
     const subscription = await subscriptionService.advanceCycle(req.user.id, req.params.id);
     res.json({ subscription });

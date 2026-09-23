@@ -11,4 +11,11 @@ export const subscriptionSchema = z.object({
   ),
   status: z.enum(['active', 'paused', 'cancelled']).default('active'),
   notes: z.string().max(500).nullish().transform((v) => v || ''),
+  reminderDaysBefore: z.coerce.number().int().min(1).max(30).optional().default(3),
+  // Free-Trial Expiry Sentinel & Cancellation Deadline
+  isFreeTrial: z.coerce.boolean().optional().default(false),
+  trialEndDate: z.string().nullish().transform((val) => (val ? String(val).slice(0, 10) : null)),
+  cancellationDeadline: z.string().nullish().transform((val) => (val ? String(val).slice(0, 10) : null)),
+  postTrialAmount: z.coerce.number().nonnegative().nullish().transform((v) => (v !== undefined && v !== null ? Number(v) : null)),
+  postTrialCurrency: z.string().length(3).nullish().transform((v) => v || 'USD'),
 });

@@ -61,7 +61,7 @@ async function syncOverdueSubscriptions(userId, subscriptions) {
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
   for (const sub of subscriptions) {
-    if (sub.status === 'active') {
+    if (sub.status === 'active' && !sub.isFreeTrial) {
       const subDate = parseDateParts(sub.nextRenewalDate);
       if (subDate < todayStart) {
         const nextDateStr = getNextActiveRenewalDate(sub.nextRenewalDate, sub.billingCycle, today);
@@ -120,7 +120,7 @@ export const subscriptionService = {
     const sub = await subscriptionModel.findById(userId, id);
     if (!sub) throw new ApiError(404, 'Subscription not found');
 
-    if (sub.status === 'active') {
+    if (sub.status === 'active' && !sub.isFreeTrial) {
       const today = new Date();
       const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       if (parseDateParts(sub.nextRenewalDate) < todayStart) {
@@ -142,6 +142,21 @@ export const subscriptionService = {
     if (Number(existing.amount) !== Number(data.amount)) {
       await priceHistoryModel.record(id, existing.amount, data.amount);
     }
+
+    return updated;
+  },
+
+  async convertTrial(userId, id, customRenewalDate = null) {
+    const sub = await this.get(userId, id);
+    if (!sub) throw new ApiError(404, 'Subscription not found');
+
+    const baseDate = sub.trialEndDate || sub.nextRenewalDate;
+    const nextDate = customRenewalDate || formatDateString(addCycle(baseDate, sub.billingCycle));
+    
+    const updated = await subscriptionModel.convertTrialToActive(userId, id, nextDate);
+    
+    // Mark pending trial reminders as dismissed/paid
+    await reminderModel.markPaidForSubscription(userId, id);
 
     return updated;
   },
@@ -277,6 +292,28 @@ export const subscriptionService = {
       })
       .sort((a, b) => parseDateParts(a.nextRenewalDate) - parseDateParts(b.nextRenewalDate));
 
+    // Active Free Trials with Sentinel metadata
+    const activeTrials = [];
+    for (const s of active.filter((item) => item.isFreeTrial)) {
+      const deadline = s.cancellationDeadline || s.trialEndDate || s.nextRenewalDate;
+      const d = parseDateParts(deadline);
+      const daysLeft = Math.round((d.getTime() - todayStart.getTime()) / (24 * 60 * 60 * 1000));
+      const convertedPostTrial = await currencyService.convert(
+        s.postTrialAmount || s.amount,
+        s.postTrialCurrency || s.currency,
+        baseCurrency
+      );
+
+      activeTrials.push({
+        ...s,
+        effectiveDeadline: deadline,
+        daysLeft,
+        convertedPostTrialAmount: convertedPostTrial,
+      });
+    }
+
+    activeTrials.sort((a, b) => a.daysLeft - b.daysLeft);
+
     const categoryBreakdown = Object.values(byCategory)
       .map((item) => ({
         category: item.category,
@@ -308,6 +345,8 @@ export const subscriptionService = {
       pausedCount: paused.length,
       cancelledCount: cancelled.length,
       totalCount: all.length,
+      trialsCount: activeTrials.length,
+      activeTrials,
       savings: {
         monthlySaved: Number(totalMonthlySaved.toFixed(2)),
         yearlySaved: Number(totalYearlySaved.toFixed(2)),
@@ -343,7 +382,9 @@ export const subscriptionService = {
 
     for (const s of active) {
       let occurrence = parseDateParts(s.nextRenewalDate);
-      const convertedAmount = await currencyService.convert(s.amount, s.currency, baseCurrency);
+      const chargeAmount = s.isFreeTrial && s.postTrialAmount !== null ? s.postTrialAmount : s.amount;
+      const chargeCurrency = s.isFreeTrial && s.postTrialCurrency ? s.postTrialCurrency : s.currency;
+      const convertedAmount = await currencyService.convert(chargeAmount, chargeCurrency, baseCurrency);
 
       let guard = 0;
       while (occurrence < windowEnd && guard < 500) {
@@ -355,8 +396,8 @@ export const subscriptionService = {
             bucket.charges.push({
               name: s.name,
               amount: convertedAmount,
-              nativeAmount: Number(s.amount),
-              nativeCurrency: s.currency,
+              nativeAmount: Number(chargeAmount),
+              nativeCurrency: chargeCurrency,
               date: formatDateString(occurrence),
             });
           }
@@ -371,71 +412,62 @@ export const subscriptionService = {
       total: Number(b.total.toFixed(2)),
     }));
 
-    return { baseCurrency, months: monthsOut };
+    return {
+      baseCurrency,
+      months: monthsOut,
+    };
   },
 
-  async spendTrend(userId, months = 12, currency = null) {
+  async trend(userId, months = 12, currency = null) {
     const baseCurrency = await resolveUserBaseCurrency(userId, currency);
     const rawSubs = await subscriptionModel.findAllForUser(userId);
-    const active = rawSubs.filter((s) => s.status === 'active');
-    const history = await priceHistoryModel.findAllForUser(userId);
+    const all = await syncOverdueSubscriptions(userId, rawSubs);
+    const active = all.filter((s) => s.status === 'active');
+    const priceHistories = await priceHistoryModel.findAllForUser(userId);
 
     const historyBySub = new Map();
-    for (const h of history) {
-      if (!historyBySub.has(h.subscriptionId)) historyBySub.set(h.subscriptionId, []);
-      historyBySub.get(h.subscriptionId).push(h);
+    for (const p of priceHistories) {
+      if (!historyBySub.has(p.subscriptionId)) {
+        historyBySub.set(p.subscriptionId, []);
+      }
+      historyBySub.get(p.subscriptionId).push(p);
     }
 
     const now = new Date();
-    const points = [];
+    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const result = [];
 
     for (let i = months - 1; i >= 0; i--) {
-      const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      let total = 0;
+      const targetMonthDate = new Date(currentMonthStart);
+      targetMonthDate.setMonth(targetMonthDate.getMonth() - i);
+
+      const targetMonthEnd = new Date(targetMonthDate.getFullYear(), targetMonthDate.getMonth() + 1, 0, 23, 59, 59);
+
+      let monthlySum = 0;
 
       for (const s of active) {
-        if (new Date(s.createdAt) > monthStart) continue;
-        const nativeAmt = amountAsOf(s, historyBySub.get(s.id), monthStart);
-        const converted = await currencyService.convert(nativeAmt, s.currency, baseCurrency);
-        const cycleMonths = CYCLE_TO_MONTHS[s.billingCycle] || 1;
-        total += converted / cycleMonths;
+        const createdAt = new Date(s.createdAt);
+        if (createdAt > targetMonthEnd) continue;
+
+        const changes = historyBySub.get(s.id) || [];
+        const rawAmount = amountAsOf(s, changes, targetMonthEnd);
+        const converted = await currencyService.convert(rawAmount, s.currency, baseCurrency);
+
+        const mFactor = CYCLE_TO_MONTHS[s.billingCycle] || 1;
+        monthlySum += converted / mFactor;
       }
 
-      points.push({
-        month: monthKey(monthStart),
-        label: monthLabel(monthStart),
-        total: Number(total.toFixed(2)),
+      result.push({
+        month: monthKey(targetMonthDate),
+        label: monthLabel(targetMonthDate),
+        spend: Number(monthlySum.toFixed(2)),
       });
-    }
-
-    // Compute Trend Metrics
-    const totals = points.map((p) => p.total);
-    const sum = totals.reduce((a, b) => a + b, 0);
-    const average = points.length > 0 ? Number((sum / points.length).toFixed(2)) : 0;
-
-    const firstTotal = points[0]?.total || 0;
-    const latestTotal = points[points.length - 1]?.total || 0;
-    const netDelta = Number((latestTotal - firstTotal).toFixed(2));
-    const netDeltaPercent = firstTotal > 0 ? Number(((netDelta / firstTotal) * 100).toFixed(1)) : 0;
-
-    let peakMonth = points[0] || null;
-    let lowMonth = points[0] || null;
-    for (const p of points) {
-      if (!peakMonth || p.total > peakMonth.total) peakMonth = p;
-      if (!lowMonth || p.total < lowMonth.total) lowMonth = p;
     }
 
     return {
       baseCurrency,
-      months: points,
-      summary: {
-        average,
-        latestTotal,
-        netDelta,
-        netDeltaPercent,
-        peakMonth,
-        lowMonth,
-      },
+      trend: result,
     };
   },
 };

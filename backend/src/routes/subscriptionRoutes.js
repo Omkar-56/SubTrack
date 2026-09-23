@@ -21,6 +21,7 @@ router.get('/:id/price-history', subscriptionController.priceHistory);
 router.get('/:id/payments', subscriptionController.payments);
 router.post('/:id/advance', subscriptionController.advanceCycle);
 router.post('/:id/confirm-payment', subscriptionController.confirmPayment);
+router.post('/:id/convert-trial', subscriptionController.convertTrial);
 router.post('/:id/remind', subscriptionController.triggerReminder);
 router.put('/:id', validate(subscriptionSchema), subscriptionController.update);
 router.delete('/:id', subscriptionController.remove);

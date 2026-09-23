@@ -5,8 +5,8 @@ import { parseDateParts, formatDateString } from './subscriptionService.js';
 
 export const reminderService = {
   /**
-   * Scans active subscriptions for upcoming renewals within reminderDays
-   * and creates pending reminder records if not already created for this cycle.
+   * Scans active subscriptions for upcoming renewals or free trial expiry deadlines
+   * and creates pending reminder records if not already created.
    */
   async syncRemindersForUser(userId) {
     const user = await userModel.findById(userId);
@@ -21,39 +21,81 @@ export const reminderService = {
 
     for (const sub of active) {
       const reminderDays = sub.reminderDaysBefore || 3;
-      const subDueDate = parseDateParts(sub.nextRenewalDate);
-      const diffDays = Math.round((subDueDate.getTime() - todayStart.getTime()) / (24 * 60 * 60 * 1000));
 
-      // If renewal is within reminderDays (e.g. 0 to 3 days, or overdue)
-      if (diffDays <= reminderDays && diffDays >= -7) {
-        const dueDateStr = formatDateString(subDueDate);
-        const existing = await reminderModel.findRecentForSubscription(userId, sub.id, dueDateStr);
+      if (sub.isFreeTrial) {
+        // Free-Trial Expiry Sentinel & Cancellation Deadline logic
+        const deadlineDateInput = sub.cancellationDeadline || sub.trialEndDate || sub.nextRenewalDate;
+        const deadlineDate = parseDateParts(deadlineDateInput);
+        const diffDays = Math.round((deadlineDate.getTime() - todayStart.getTime()) / (24 * 60 * 60 * 1000));
 
-        if (!existing) {
-          const daysText =
-            diffDays === 0
-              ? 'due today'
-              : diffDays > 0
-              ? `due in ${diffDays} day${diffDays === 1 ? '' : 's'}`
-              : `overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? '' : 's'}`;
+        // Alert if within reminder window (e.g. 0 to 3 days or slightly overdue)
+        if (diffDays <= reminderDays && diffDays >= -7) {
+          const deadlineDateStr = formatDateString(deadlineDate);
+          const existing = await reminderModel.findRecentForSubscription(userId, sub.id, deadlineDateStr);
 
-          const message = `${sub.name} is ${daysText} (${sub.currency} ${Number(sub.amount).toFixed(2)}). Confirm payment once charged to advance to the next cycle.`;
+          if (!existing) {
+            const daysText =
+              diffDays === 0
+                ? 'expires TODAY'
+                : diffDays > 0
+                ? `expires in ${diffDays} day${diffDays === 1 ? '' : 's'}`
+                : `expired ${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? '' : 's'} ago`;
 
-          const reminder = await reminderModel.create({
-            userId,
-            subscriptionId: sub.id,
-            dueDate: dueDateStr,
-            status: 'pending',
-            sentAt: new Date(),
-            channel: 'in_app',
-            message,
-          });
+            const chargeAmount = sub.postTrialAmount !== null && sub.postTrialAmount !== undefined
+              ? Number(sub.postTrialAmount).toFixed(2)
+              : Number(sub.amount).toFixed(2);
+            const chargeCurrency = sub.postTrialCurrency || sub.currency;
 
-          await subscriptionModel.updateReminderSentAt(userId, sub.id, new Date());
-          createdReminders.push(reminder);
+            const message = `🚨 Trial Expiry Alert: ${sub.name} trial ${daysText}! Cancel before ${deadlineDateStr} to avoid being charged ${chargeCurrency} ${chargeAmount}/${sub.billingCycle}.`;
 
-          // Log reminder dispatch (could be extended to nodemailer / webhooks)
-          console.log(`[Reminder Dispatched] User: ${user.email} | Sub: ${sub.name} | Due: ${dueDateStr} (${daysText})`);
+            const reminder = await reminderModel.create({
+              userId,
+              subscriptionId: sub.id,
+              dueDate: deadlineDateStr,
+              status: 'pending',
+              sentAt: new Date(),
+              channel: 'sentinel',
+              message,
+            });
+
+            await subscriptionModel.updateReminderSentAt(userId, sub.id, new Date());
+            createdReminders.push(reminder);
+            console.log(`[Sentinel Alert Dispatched] User: ${user.email} | Trial: ${sub.name} | Deadline: ${deadlineDateStr} (${daysText})`);
+          }
+        }
+      } else {
+        // Regular Renewal Reminder logic
+        const subDueDate = parseDateParts(sub.nextRenewalDate);
+        const diffDays = Math.round((subDueDate.getTime() - todayStart.getTime()) / (24 * 60 * 60 * 1000));
+
+        if (diffDays <= reminderDays && diffDays >= -7) {
+          const dueDateStr = formatDateString(subDueDate);
+          const existing = await reminderModel.findRecentForSubscription(userId, sub.id, dueDateStr);
+
+          if (!existing) {
+            const daysText =
+              diffDays === 0
+                ? 'due today'
+                : diffDays > 0
+                ? `due in ${diffDays} day${diffDays === 1 ? '' : 's'}`
+                : `overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? '' : 's'}`;
+
+            const message = `${sub.name} is ${daysText} (${sub.currency} ${Number(sub.amount).toFixed(2)}). Confirm payment once charged to advance to the next cycle.`;
+
+            const reminder = await reminderModel.create({
+              userId,
+              subscriptionId: sub.id,
+              dueDate: dueDateStr,
+              status: 'pending',
+              sentAt: new Date(),
+              channel: 'in_app',
+              message,
+            });
+
+            await subscriptionModel.updateReminderSentAt(userId, sub.id, new Date());
+            createdReminders.push(reminder);
+            console.log(`[Reminder Dispatched] User: ${user.email} | Sub: ${sub.name} | Due: ${dueDateStr} (${daysText})`);
+          }
         }
       }
     }
@@ -73,8 +115,14 @@ export const reminderService = {
     const sub = await subscriptionModel.findById(userId, subscriptionId);
     if (!sub) throw new Error('Subscription not found');
 
-    const dueDateStr = formatDateString(parseDateParts(sub.nextRenewalDate));
-    const message = `Manual Reminder: ${sub.name} is scheduled for renewal on ${dueDateStr} (${sub.currency} ${Number(sub.amount).toFixed(2)}).`;
+    const targetDate = sub.isFreeTrial && sub.cancellationDeadline
+      ? parseDateParts(sub.cancellationDeadline)
+      : parseDateParts(sub.nextRenewalDate);
+    const dueDateStr = formatDateString(targetDate);
+
+    const message = sub.isFreeTrial
+      ? `🚨 Sentinel Trial Alert: ${sub.name} trial cancellation deadline is ${dueDateStr}. Post-trial cost: ${sub.postTrialCurrency || sub.currency} ${Number(sub.postTrialAmount || sub.amount).toFixed(2)}.`
+      : `Manual Reminder: ${sub.name} is scheduled for renewal on ${dueDateStr} (${sub.currency} ${Number(sub.amount).toFixed(2)}).`;
 
     const reminder = await reminderModel.create({
       userId,
@@ -82,7 +130,7 @@ export const reminderService = {
       dueDate: dueDateStr,
       status: 'pending',
       sentAt: new Date(),
-      channel: 'in_app',
+      channel: sub.isFreeTrial ? 'sentinel' : 'in_app',
       message,
     });
 
