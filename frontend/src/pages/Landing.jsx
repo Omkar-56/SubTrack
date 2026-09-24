@@ -41,75 +41,79 @@ const SAMPLE_COMPANIES = [
 export default function Landing() {
   return (
     <div className="w-full space-y-24 pb-16">
-      {/* 
+      {/*
         Hero Section:
-        True full-bleed edge-to-edge background with 0 gaps on left & right
+        Seamless background #F5FCF8 matching hero-final3.png so the illustration on the right blends perfectly.
       */}
-      <section className="relative w-full bg-[#F4F6F5] overflow-hidden border-b border-line/60">
-        {/* Full Edge-to-Edge Background Image spanning 100% width with no gaps */}
-        <div
-          className="absolute inset-0 z-0 bg-no-repeat pointer-events-none"
-          style={{
-            backgroundImage: `url('/hero-final.png')`,
-            backgroundPosition: 'center center',
-            backgroundSize: '100% 100%',
-          }}
-        />
+      <section className="relative w-full bg-[#f5f8f6] overflow-hidden border-b border-line/60">
+        <div className="relative mx-auto max-w-[1440px] w-full px-6 sm:px-10 lg:px-14 py-4">
+          <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-10 lg:gap-8">
+            {/* Left Side: Headline, Subtitle, CTA & Trust Points */}
+            <div className="lg:col-span-5 space-y-6 text-left z-10">
+              {/* Main Headline */}
+              <h1 className="font-display text-4xl sm:text-5xl lg:text-[52px] font-bold tracking-tight text-ink leading-[1.12]">
+                Track subscriptions. <br />
+                <span className="text-ledger">Stay in control.</span>
+              </h1>
 
-        {/* Text Overlay shifted further left via expanded max-width & minimal left padding */}
-        <div className="relative z-10 mx-auto max-w-[1440px] w-full px-4 sm:px-6 lg:px-8 py-14 sm:py-20 lg:py-24 flex items-center">
-          <div className="w-full max-w-[490px] space-y-6 text-left">
-            {/* Main Headline */}
-            <h1 className="font-display text-4xl sm:text-5xl lg:text-[54px] font-bold tracking-tight text-ink leading-[1.12]">
-              Track subscriptions. <br />
-              <span className="text-ledger">Stay in control.</span>
-            </h1>
-
-            {/* Subtitle */}
-            <p className="max-w-md text-base sm:text-lg text-ink/75 leading-relaxed">
-              The intentional, high-clarity subscription ledger. Track recurring services,
-              get alerted before trial expiry & due dates, and cancel unwanted bills with 1-click direct guides.
-            </p>
-
-            {/* CTA Button */}
-            <div className="pt-1 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <Link
-                to="/register"
-                className="inline-flex items-center justify-center gap-2 rounded-md bg-ledger px-6 py-3.5 text-sm font-semibold text-white shadow-md hover:bg-ledger-dark transition-all transform hover:-translate-y-0.5 cursor-pointer"
-              >
-                <span>Get Started Free</span>
-                <span>→</span>
-              </Link>
-            </div>
-
-            {/* Trust points */}
-            <div className="flex flex-wrap items-center gap-4 pt-1 text-xs text-ink/70 font-medium">
-              <span className="flex items-center gap-1.5">
-                <svg className="h-4 w-4 text-ledger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                </svg>
-                No credit card required
-              </span>
-              <span className="flex items-center gap-1.5">
-                <svg className="h-4 w-4 text-ledger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-                Free forever
-              </span>
-              <span className="flex items-center gap-1.5">
-                <svg className="h-4 w-4 text-ledger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                </svg>
-                Live currency conversion
-              </span>
-            </div>
-
-            {/* Editorial Footer Tagline */}
-            <div className="pt-4 border-t border-line/60">
-              <p className="font-display text-[11px] font-bold tracking-widest uppercase text-ink/50">
-                Know what you pay for. Keep what you love.
+              {/* Subtitle */}
+              <p className="max-w-md text-base sm:text-lg text-ink/75 leading-relaxed">
+                The intentional, high-clarity subscription ledger. Track recurring services,
+                get alerted before trial expiry & due dates, and cancel unwanted bills with 1-click direct guides.
               </p>
-              <div className="mt-1 h-0.5 w-8 bg-ledger/60" />
+
+              {/* CTA Button */}
+              <div className="pt-1 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <Link
+                  to="/register"
+                  className="inline-flex items-center justify-center gap-2 rounded-md bg-ledger px-6 py-3.5 text-sm font-semibold text-white shadow-md hover:bg-ledger-dark transition-all transform hover:-translate-y-0.5 cursor-pointer"
+                >
+                  <span>Get Started Free</span>
+                  <span>→</span>
+                </Link>
+              </div>
+
+              {/* Trust points */}
+              <div className="flex flex-wrap items-center gap-4 pt-1 text-xs text-ink/70 font-medium">
+                <span className="flex items-center gap-1.5">
+                  <svg className="h-4 w-4 text-ledger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                  No credit card required
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <svg className="h-4 w-4 text-ledger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Free forever
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <svg className="h-4 w-4 text-ledger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                  </svg>
+                  Live currency conversion
+                </span>
+              </div>
+
+              {/* Editorial Footer Tagline */}
+              <div className="pt-4 border-t border-line/60">
+                <p className="font-display text-[11px] font-bold tracking-widest uppercase text-ink/50">
+                  Know what you pay for. Keep what you love.
+                </p>
+                <div className="mt-1 h-0.5 w-8 bg-ledger/60" />
+              </div>
+            </div>
+
+            {/* Right Side: hero-final3 image blending seamlessly into background */}
+            <div className="lg:col-span-7 flex justify-center lg:justify-end items-center">
+              <div className="relative w-full max-w-[680px] lg:max-w-none">
+                <img
+                  src="/hero-final5.png"
+                  alt="SubTrack dashboard preview with active subscriptions and spend analytics"
+                  className="w-full h-auto object-contain select-none pointer-events-none drop-shadow-sm"
+                  loading="eager"
+                />
+              </div>
             </div>
           </div>
         </div>
