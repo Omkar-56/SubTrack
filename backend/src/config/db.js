@@ -3,8 +3,16 @@ import { env } from './env.js';
 
 const { Pool } = pg;
 
+const isSupabaseOrCloud =
+  Boolean(env.databaseUrl) &&
+  (env.databaseUrl.includes('supabase.co') ||
+    env.databaseUrl.includes('pooler.supabase.com') ||
+    env.databaseUrl.includes('sslmode=require') ||
+    env.nodeEnv === 'production');
+
 export const pool = new Pool({
   connectionString: env.databaseUrl,
+  ssl: isSupabaseOrCloud ? { rejectUnauthorized: false } : undefined,
 });
 
 pool.on('error', (err) => {

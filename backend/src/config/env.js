@@ -1,6 +1,17 @@
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+// Load default .env from current working directory
 dotenv.config();
+
+// Also load backend/.env if running from workspace root
+try {
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
+  dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+} catch {
+  // ignore
+}
 
 function required(name, fallback) {
   const value = process.env[name] ?? fallback;
