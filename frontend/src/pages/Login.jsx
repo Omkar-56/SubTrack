@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import GoogleSignInButton from '../components/GoogleSignInButton';
 
 export default function Login() {
   const { login } = useAuth();
@@ -29,7 +30,21 @@ export default function Login() {
       <h1 className="font-display text-2xl font-semibold">Welcome back</h1>
       <p className="mt-1 text-sm text-ink/60">Sign in to see what's renewing.</p>
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+      {/* Google OAuth Button */}
+      <div className="mt-6">
+        <GoogleSignInButton text="signin_with" onError={(err) => setError(err)} />
+      </div>
+
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-line" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-paper px-2 text-ink/40 font-medium">Or continue with email</span>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="text-sm font-medium">Email</label>
           <input
@@ -54,7 +69,7 @@ export default function Login() {
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-sm bg-ledger py-2 text-sm font-medium text-white transition-colors hover:bg-ledger-dark disabled:opacity-60"
+          className="w-full rounded-sm bg-ledger py-2 text-sm font-medium text-white transition-colors hover:bg-ledger-dark disabled:opacity-60 cursor-pointer"
         >
           {submitting ? 'Signing in…' : 'Sign in'}
         </button>

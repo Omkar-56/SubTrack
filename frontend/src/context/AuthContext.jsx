@@ -32,6 +32,12 @@ export function AuthProvider({ children }) {
     setUser(user);
   }, []);
 
+  const loginWithGoogle = useCallback(async (credential) => {
+    const { user, token } = await api.googleAuth(credential);
+    localStorage.setItem('subtrack_token', token);
+    setUser(user);
+  }, []);
+
   const setBaseCurrency = useCallback(async (currency) => {
     try {
       const { user } = await api.updateCurrency(currency);
@@ -47,7 +53,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, setBaseCurrency, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, loginWithGoogle, setBaseCurrency, logout }}>
       {children}
     </AuthContext.Provider>
   );
