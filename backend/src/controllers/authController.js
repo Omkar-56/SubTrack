@@ -12,6 +12,12 @@ export const authController = {
     res.json({ user, token });
   }),
 
+  google: asyncHandler(async (req, res) => {
+    const { credential } = req.body;
+    const { user, token } = await authService.googleAuth(credential);
+    res.json({ user, token });
+  }),
+
   me: asyncHandler(async (req, res) => {
     const user = await authService.me(req.user.id);
     res.json({ user });
