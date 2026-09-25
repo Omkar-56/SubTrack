@@ -37,14 +37,14 @@ export default function App() {
           }
         />
 
-        {/* Standard max-w-5xl container for Auth & App pages */}
+        {/* Standard container for Auth & App pages with decreased side padding */}
         <Route
           path="/login"
           element={
             user ? (
               <Navigate to="/dashboard" replace />
             ) : (
-              <main className="mx-auto max-w-5xl px-6 py-10">
+              <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
                 <Login />
               </main>
             )
@@ -56,7 +56,7 @@ export default function App() {
             user ? (
               <Navigate to="/dashboard" replace />
             ) : (
-              <main className="mx-auto max-w-5xl px-6 py-10">
+              <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
                 <Register />
               </main>
             )
@@ -67,7 +67,7 @@ export default function App() {
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <main className="mx-auto max-w-5xl px-6 py-10">
+              <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
                 <Dashboard />
               </main>
             </ProtectedRoute>
@@ -77,7 +77,7 @@ export default function App() {
           path="/subscriptions"
           element={
             <ProtectedRoute>
-              <main className="mx-auto max-w-5xl px-6 py-10">
+              <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
                 <Subscriptions />
               </main>
             </ProtectedRoute>

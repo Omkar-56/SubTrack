@@ -87,15 +87,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-10">
-      <div>
-        <h1 className="font-display text-2xl font-semibold">Overview</h1>
-        <p className="mt-1 text-sm text-ink/60">
-          What your subscriptions are costing you, normalized in real-time in{' '}
-          <strong className="text-ink font-medium">{baseCurrency}</strong>.
-        </p>
-      </div>
-
+    <div className="space-y-8">
       {/* Free-Trial Expiry Sentinel Banner */}
       {activeTrials.length > 0 && (
         <div className="rounded-md border border-amber/40 bg-amber-light/40 p-4 shadow-2xs">
@@ -226,42 +218,96 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Top Stat Cards: Spend & Savings Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          label="Monthly commitment"
-          value={formatMoney(summary.totalMonthly, baseCurrency)}
-          sublabel="Active recurring charges"
-          tone="ledger"
-        />
-        <StatCard
-          label="Yearly run rate"
-          value={formatMoney(summary.totalYearly, baseCurrency)}
-          sublabel="Projected 12-month total"
-        />
-        <StatCard
-          label="Active subscriptions"
-          value={summary.activeCount}
-          sublabel={`${summary.trialsCount || 0} active trial${summary.trialsCount === 1 ? '' : 's'}`}
-        />
-        <StatCard
-          label="Monthly savings"
-          value={formatMoney(savings.monthlySaved, baseCurrency)}
-          sublabel={`≈ ${formatMoney(savings.yearlySaved, baseCurrency)}/yr (${savings.cancelledCount} cancelled, ${savings.pausedCount} paused)`}
-          tone={savings.monthlySaved > 0 ? 'emerald' : 'default'}
-        />
+      {/* ROW 1: Overview (left) and Spend by Category (right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Side: Overview Header & Stat Cards */}
+        <section className="lg:col-span-6">
+          <div>
+            <div className="flex items-baseline justify-between">
+              <h1 className="font-display text-xl sm:text-2xl font-semibold">Overview</h1>
+              <span className="text-xs text-ink/50">
+                Normalized in <strong className="text-ink font-medium">{baseCurrency}</strong>
+              </span>
+            </div>
+            <p className="mt-1 text-xs sm:text-sm text-ink/60">
+              Live summary of your active commitments and financial savings.
+            </p>
+          </div>
+
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3.5 items-start">
+            <StatCard
+              label="Monthly commitment"
+              value={formatMoney(summary.totalMonthly, baseCurrency)}
+              sublabel="Active recurring charges"
+              tone="ledger"
+            />
+            <StatCard
+              label="Yearly run rate"
+              value={formatMoney(summary.totalYearly, baseCurrency)}
+              sublabel="Projected 12-month total"
+            />
+            <StatCard
+              label="Active subscriptions"
+              value={summary.activeCount}
+              sublabel={`${summary.trialsCount || 0} active trial${summary.trialsCount === 1 ? '' : 's'}`}
+            />
+            <StatCard
+              label="Monthly savings"
+              value={formatMoney(savings.monthlySaved, baseCurrency)}
+              sublabel={`≈ ${formatMoney(savings.yearlySaved, baseCurrency)}/yr (${savings.cancelledCount} cancelled, ${savings.pausedCount} paused)`}
+              tone={savings.monthlySaved > 0 ? 'emerald' : 'default'}
+            />
+          </div>
+        </section>
+
+        {/* Right Side: Spend by category with Interactive Donut Chart */}
+        <section className="lg:col-span-6">
+          <div className="flex justify-between mb-1">
+            <h2 className="font-display text-lg sm:text-xl font-semibold">Spend by category</h2>
+            <span className="text-xs text-ink/50">
+              {summary.categoryBreakdown.length} {summary.categoryBreakdown.length === 1 ? 'category' : 'categories'}
+            </span>
+          </div>
+          <p className="mt-2 text-xs sm:text-sm text-ink/60">
+            See how much you spend on each category.
+          </p>
+          <CategoryBreakdown
+            categories={summary.categoryBreakdown}
+            totalMonthly={summary.totalMonthly}
+            currency={baseCurrency}
+          />
+        </section>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Renewing soon */}
-        <section className="lg:col-span-5">
+      {/* ROW 2: 12-month forecast (left) and Renewing soon (right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        {/* Left Side: 12-month forecast */}
+        <section className="lg:col-span-8">
           <div className="flex items-baseline justify-between">
-            <h2 className="font-display text-lg font-semibold">Renewing soon</h2>
-            <Link to="/subscriptions" className="text-sm text-ledger hover:underline">See all</Link>
+            <h2 className="font-display text-lg sm:text-xl font-semibold">12-month forecast</h2>
+            <span className="text-xs text-ink/50">Normalized in {baseCurrency}</span>
+          </div>
+          {forecast ? (
+            <ForecastChart months={forecast.months} currency={baseCurrency} />
+          ) : (
+            <div className="mt-3 border border-line bg-white p-8 text-center text-sm text-ink/50 shadow-2xs">
+              Calculating forecast…
+            </div>
+          )}
+        </section>
+
+        {/* Right Side: Renewing soon */}
+        <section className="lg:col-span-4">
+          <div className="flex items-baseline justify-between">
+            <h2 className="font-display text-lg sm:text-xl font-semibold">Renewing soon</h2>
+            <Link to="/subscriptions" className="text-xs sm:text-sm text-ledger hover:underline font-medium">
+              See all →
+            </Link>
           </div>
           <div className="mt-3 border border-line bg-white shadow-2xs">
             {summary.upcomingRenewals.length === 0 && (
-              <p className="px-4 py-6 text-sm text-ink/50">Nothing renewing in the next two weeks.</p>
+              <p className="px-4 py-8 text-center text-sm text-ink/50">Nothing renewing in the next two weeks.</p>
             )}
             {summary.upcomingRenewals.map((s) => {
               const isDifferentCurrency = s.currency !== baseCurrency && s.convertedAmount;
@@ -274,8 +320,8 @@ export default function Dashboard() {
                   <div className="flex items-center gap-3 min-w-0">
                     <BrandLogo name={s.name} category={s.category} size="sm" />
                     <div className="min-w-0">
-                      <p className="font-medium truncate">{s.name}</p>
-                      <p className="text-xs text-ink/50">
+                      <p className="font-medium text-xs sm:text-sm truncate">{s.name}</p>
+                      <p className="text-[11px] sm:text-xs text-ink/50">
                         {formatDate(s.nextRenewalDate)} · in {days}d
                       </p>
                     </div>
@@ -286,14 +332,14 @@ export default function Dashboard() {
                         {formatMoney(s.amount, s.currency)}
                       </p>
                       {isDifferentCurrency && (
-                        <p className="tabular text-[11px] text-ink/40">
+                        <p className="tabular text-[10px] sm:text-[11px] text-ink/40">
                           ≈ {formatMoney(s.convertedAmount, baseCurrency)}
                         </p>
                       )}
                     </div>
                     <button
                       onClick={() => setPayingSub(s)}
-                      className="rounded bg-ledger-light border border-ledger/30 px-2 py-1 text-[11px] font-semibold text-ledger-dark hover:bg-ledger hover:text-white transition-colors cursor-pointer"
+                      className="rounded bg-ledger-light border border-ledger/30 px-2.5 py-1 text-[11px] font-semibold text-ledger-dark hover:bg-ledger hover:text-white transition-colors cursor-pointer"
                       title="Confirm payment & roll over to next billing cycle"
                     >
                       ✓ Paid
@@ -304,34 +350,9 @@ export default function Dashboard() {
             })}
           </div>
         </section>
-
-        {/* Spend by category with Interactive Donut Chart */}
-        <section className="lg:col-span-7">
-          <div className="flex items-baseline justify-between">
-            <h2 className="font-display text-lg font-semibold">Spend by category</h2>
-            <span className="text-xs text-ink/50">
-              {summary.categoryBreakdown.length} {summary.categoryBreakdown.length === 1 ? 'category' : 'categories'}
-            </span>
-          </div>
-          <CategoryBreakdown
-            categories={summary.categoryBreakdown}
-            totalMonthly={summary.totalMonthly}
-            currency={baseCurrency}
-          />
-        </section>
       </div>
 
-      {forecast && (
-        <section>
-          <h2 className="font-display text-lg font-semibold">12-month forecast</h2>
-          <p className="mt-1 text-sm text-ink/60">
-            What's actually due each month in {baseCurrency}, based on real renewal dates.
-          </p>
-          <ForecastChart months={forecast.months} currency={baseCurrency} />
-        </section>
-      )}
-
-      {summary.recentPriceIncreases.length > 0 && (
+      {summary.recentPriceIncreases?.length > 0 && (
         <section>
           <h2 className="font-display text-lg font-semibold">Price alerts</h2>
           <p className="mt-1 text-sm text-ink/60">
@@ -340,7 +361,6 @@ export default function Dashboard() {
         </section>
       )}
 
-      {/* Payment Confirmation Modal */}
       {payingSub && (
         <PaymentConfirmModal
           subscription={payingSub}
@@ -349,7 +369,6 @@ export default function Dashboard() {
         />
       )}
 
-      {/* Cancellation Guide Modal */}
       {guideSub && (
         <CancellationGuideModal
           subscription={guideSub}

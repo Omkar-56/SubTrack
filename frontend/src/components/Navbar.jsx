@@ -70,7 +70,7 @@ export default function Navbar() {
   return (
     <>
       <header className="border-b border-line bg-white/80 backdrop-blur-xs sticky top-0 z-30">
-        <div className={`mx-auto flex items-center justify-between px-6 sm:px-10 lg:px-14 py-3.5 ${isLandingPage ? 'max-w-7xl' : 'max-w-5xl'}`}>
+        <div className={`mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3.5 max-w-7xl`}>
           <div className="flex items-center gap-8">
             <NavLink to={user ? '/dashboard' : '/'} className="font-display text-lg font-bold tracking-tight text-ink flex items-center gap-2">
               <span className="inline-block w-2.5 h-2.5 rounded-full bg-ledger"></span>

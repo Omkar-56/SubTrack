@@ -23,11 +23,11 @@ export default function CategoryBreakdown({ categories = [], totalMonthly = 0, c
   const hoveredItem = activeIndex !== null ? chartData[activeIndex] : null;
 
   return (
-    <div className="mt-3 border border-line bg-white p-5 shadow-2xs">
-      <div className="grid grid-cols-1 items-center gap-6 sm:grid-cols-12">
+    <div className="mt-3 border border-line bg-white p-4 sm:p-5 shadow-2xs">
+      <div className="flex items-center gap-5">
         {/* Donut Chart with Center Display */}
-        <div className="relative flex items-center justify-center sm:col-span-5">
-          <div className="h-[210px] w-[210px]">
+        <div className="relative flex items-center justify-center w-full">
+          <div className="h-[190px] w-[190px]">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -36,8 +36,8 @@ export default function CategoryBreakdown({ categories = [], totalMonthly = 0, c
                   nameKey="category"
                   cx="50%"
                   cy="50%"
-                  innerRadius={62}
-                  outerRadius={84}
+                  innerRadius={56}
+                  outerRadius={78}
                   paddingAngle={3}
                   onMouseEnter={(_, index) => setActiveIndex(index)}
                   onMouseLeave={() => setActiveIndex(null)}
@@ -65,26 +65,26 @@ export default function CategoryBreakdown({ categories = [], totalMonthly = 0, c
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center px-4">
             {hoveredItem ? (
               <>
-                <span className="max-w-[110px] truncate text-[11px] font-bold uppercase tracking-wider text-ink/60">
+                <span className="max-w-[100px] truncate text-[10px] font-bold uppercase tracking-wider text-ink/60">
                   {hoveredItem.category}
                 </span>
-                <span className="tabular font-display text-lg font-bold text-ink">
+                <span className="tabular font-display text-base font-bold text-ink">
                   {hoveredItem.percentage}%
                 </span>
-                <span className="tabular text-xs font-medium text-ink/70">
+                <span className="tabular text-[11px] font-medium text-ink/70">
                   {formatMoney(hoveredItem.monthlySpend, currency)}
                   <span className="text-[10px] font-normal text-ink/40">/mo</span>
                 </span>
-                <span className="text-[10px] text-ink/40 mt-0.5">
+                <span className="text-[10px] text-ink/40">
                   {hoveredItem.count} {hoveredItem.count === 1 ? 'sub' : 'subs'}
                 </span>
               </>
             ) : (
               <>
-                <span className="text-[11px] uppercase tracking-wider font-semibold text-ink/50">
+                <span className="text-[10px] uppercase tracking-wider font-semibold text-ink/50">
                   Total
                 </span>
-                <span className="tabular font-display text-base font-bold text-ink">
+                <span className="tabular font-display text-sm font-bold text-ink">
                   {formatMoney(totalMonthly, currency)}
                 </span>
                 <span className="text-[10px] text-ink/40">/month</span>
@@ -94,7 +94,7 @@ export default function CategoryBreakdown({ categories = [], totalMonthly = 0, c
         </div>
 
         {/* Category List & Metrics */}
-        <div className="space-y-2.5 sm:col-span-7">
+        <div className="space-y-2 w-full">
           {chartData.map((item, index) => {
             const isHovered = activeIndex === index;
             return (
@@ -102,40 +102,39 @@ export default function CategoryBreakdown({ categories = [], totalMonthly = 0, c
                 key={item.category}
                 onMouseEnter={() => setActiveIndex(index)}
                 onMouseLeave={() => setActiveIndex(null)}
-                className={`group rounded-sm border p-2.5 transition-all cursor-pointer ${
+                className={`group rounded-sm border p-2 transition-all cursor-pointer ${
                   isHovered
                     ? 'border-line bg-paper/80 shadow-2xs'
                     : 'border-line/40 bg-white hover:border-line hover:bg-paper/40'
                 }`}
               >
                 {/* Top Row: Color dot, Category Name, Sub Count, Monthly Spend */}
-                <div className="flex items-center justify-between gap-2 text-xs">
-                  <div className="flex items-center gap-2 min-w-0">
+                <div className="flex items-center justify-between gap-1.5 text-xs">
+                  <div className="flex items-center gap-1.5 min-w-0">
                     <span
-                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                      className="h-2 w-2 shrink-0 rounded-full"
                       style={{ backgroundColor: item.color }}
                     />
-                    <span className="font-medium capitalize text-ink truncate">
+                    <span className="font-medium capitalize text-ink truncate text-[11px] sm:text-xs">
                       {item.category}
                     </span>
-                    <span className="rounded bg-stone-100 px-1.5 py-0.2 text-[10px] font-medium text-ink/50 border border-stone-200/50">
-                      {item.count} {item.count === 1 ? 'sub' : 'subs'}
+                    <span className="rounded bg-stone-100 px-1 py-0.2 text-[9px] font-medium text-ink/50 border border-stone-200/50">
+                      {item.count}
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="tabular font-display font-semibold text-ink">
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="tabular font-display font-semibold text-ink text-[11px] sm:text-xs">
                       {formatMoney(item.monthlySpend, currency)}
-                      <span className="text-[10px] font-normal text-ink/50">/mo</span>
                     </span>
-                    <span className="tabular text-[11px] font-medium text-ink/40 w-10 text-right">
+                    <span className="tabular text-[10px] font-medium text-ink/40 w-7 text-right">
                       {item.percentage}%
                     </span>
                   </div>
                 </div>
 
                 {/* Progress Bar */}
-                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-stone-100">
+                <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-stone-100">
                   <div
                     className="h-full transition-all duration-300 rounded-full"
                     style={{
@@ -148,12 +147,12 @@ export default function CategoryBreakdown({ categories = [], totalMonthly = 0, c
 
                 {/* Expanded Details when Hovered */}
                 {isHovered && item.topSubscriptions?.length > 0 && (
-                  <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-line/40 pt-1.5 text-[10px] text-ink/60">
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1 border-t border-line/40 pt-1.5 text-[9px] text-ink/60">
                     <span className="text-ink/40">Includes:</span>
                     {item.topSubscriptions.map((sub, i) => (
                       <span
                         key={i}
-                        className="rounded bg-white px-1.5 py-0.5 border border-line/60 font-medium text-ink/80"
+                        className="rounded bg-white px-1 py-0.2 border border-line/60 font-medium text-ink/80"
                       >
                         {sub.name} ({formatMoney(sub.amount, currency)})
                       </span>
