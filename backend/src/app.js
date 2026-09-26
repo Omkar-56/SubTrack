@@ -24,7 +24,9 @@ export function createApp() {
   };
 
   app.use(cors({ origin: corsOrigin, credentials: true }));
-  app.use(express.json());
+  // Allow up to 20MB JSON for document/screenshot parsing payloads
+  app.use(express.json({ limit: '20mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
   app.get('/api', (req, res) => res.json({ status: 'ok', name: 'SubTrack API' }));
   app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
