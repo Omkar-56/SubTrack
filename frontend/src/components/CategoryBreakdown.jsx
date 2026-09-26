@@ -3,6 +3,16 @@ import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { formatMoney } from '../utils/date';
 import { getCategoryChartColor } from '../utils/brands';
 
+function formatCategoryLabel(cat) {
+  if (!cat) return 'Other';
+  const c = String(cat).toLowerCase().trim();
+  if (c === 'ai') return 'AI';
+  if (c === 'software / ai' || c === 'software/ai') return 'Software / AI';
+  if (c === 'news and media' || c === 'news & media') return 'News & Media';
+  if (c === 'health & fitness' || c === 'health and fitness') return 'Health & Fitness';
+  return cat.charAt(0).toUpperCase() + cat.slice(1);
+}
+
 export default function CategoryBreakdown({ categories = [], totalMonthly = 0, currency = 'USD' }) {
   const [activeIndex, setActiveIndex] = useState(null);
 
@@ -66,7 +76,7 @@ export default function CategoryBreakdown({ categories = [], totalMonthly = 0, c
             {hoveredItem ? (
               <>
                 <span className="max-w-[100px] truncate text-[10px] font-bold uppercase tracking-wider text-ink/60">
-                  {hoveredItem.category}
+                  {formatCategoryLabel(hoveredItem.category)}
                 </span>
                 <span className="tabular font-display text-base font-bold text-ink">
                   {hoveredItem.percentage}%
@@ -115,8 +125,8 @@ export default function CategoryBreakdown({ categories = [], totalMonthly = 0, c
                       className="h-2 w-2 shrink-0 rounded-full"
                       style={{ backgroundColor: item.color }}
                     />
-                    <span className="font-medium capitalize text-ink truncate text-[11px] sm:text-xs">
-                      {item.category}
+                    <span className="font-medium text-ink truncate text-[11px] sm:text-xs">
+                      {formatCategoryLabel(item.category)}
                     </span>
                     <span className="rounded bg-stone-100 px-1 py-0.2 text-[9px] font-medium text-ink/50 border border-stone-200/50">
                       {item.count}
@@ -148,13 +158,10 @@ export default function CategoryBreakdown({ categories = [], totalMonthly = 0, c
                 {/* Expanded Details when Hovered */}
                 {isHovered && item.topSubscriptions?.length > 0 && (
                   <div className="mt-1.5 flex flex-wrap items-center gap-1 border-t border-line/40 pt-1.5 text-[9px] text-ink/60">
-                    <span className="text-ink/40">Includes:</span>
-                    {item.topSubscriptions.map((sub, i) => (
-                      <span
-                        key={i}
-                        className="rounded bg-white px-1 py-0.2 border border-line/60 font-medium text-ink/80"
-                      >
-                        {sub.name} ({formatMoney(sub.amount, currency)})
+                    <span>Top:</span>
+                    {item.topSubscriptions.map((s, idx) => (
+                      <span key={idx} className="rounded bg-paper px-1 py-0.5 font-medium text-ink/70">
+                        {s.name}
                       </span>
                     ))}
                   </div>

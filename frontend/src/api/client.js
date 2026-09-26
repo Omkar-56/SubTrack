@@ -38,6 +38,7 @@ export const api = {
 
   listSubscriptions: () => request('/subscriptions'),
   createSubscription: (payload) => request('/subscriptions', { method: 'POST', body: payload }),
+  parseReceipt: (payload) => request('/subscriptions/parse-receipt', { method: 'POST', body: payload }),
   updateSubscription: (id, payload) => request(`/subscriptions/${id}`, { method: 'PUT', body: payload }),
   convertTrial: (id, payload = {}) => request(`/subscriptions/${id}/convert-trial`, { method: 'POST', body: payload }),
   advanceSubscription: (id) => request(`/subscriptions/${id}/advance`, { method: 'POST' }),

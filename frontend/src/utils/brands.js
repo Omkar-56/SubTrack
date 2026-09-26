@@ -169,27 +169,127 @@ const BRAND_DOMAINS = {
   grubhub: 'grubhub.com',
 };
 
+export const VALID_CATEGORIES = [
+  'entertainment',
+  'software / AI',
+  'AI',
+  'gaming',
+  'news and media',
+  'education',
+  'health & fitness',
+  'other',
+];
+
+export function normalizeCategory(val = '') {
+  if (!val) return 'other';
+  const v = String(val).toLowerCase().trim();
+
+  // AI-specific (ChatGPT, Claude, Midjourney, OpenAI, Gemini, Perplexity)
+  if (v === 'ai' || v === 'artificial intelligence' || v.includes('generative ai') || v.includes('llm')) {
+    return 'AI';
+  }
+
+  // Gaming
+  if (
+    v.includes('game') ||
+    v.includes('gaming') ||
+    v.includes('playstation') ||
+    v.includes('xbox') ||
+    v.includes('nintendo') ||
+    v.includes('steam')
+  ) {
+    return 'gaming';
+  }
+
+  // Software / AI or developer tooling
+  if (
+    v.includes('software') ||
+    v.includes('cloud') ||
+    v.includes('infra') ||
+    v.includes('utility') ||
+    v.includes('utilities') ||
+    v.includes('saas') ||
+    v.includes('hosting') ||
+    v.includes('dev')
+  ) {
+    return 'software / AI';
+  }
+
+  // Entertainment / streaming
+  if (
+    v.includes('entertain') ||
+    v.includes('stream') ||
+    v.includes('music') ||
+    v.includes('video') ||
+    v.includes('movie') ||
+    v.includes('podcast') ||
+    v.includes('tv')
+  ) {
+    return 'entertainment';
+  }
+
+  // News and media
+  if (
+    v.includes('news') ||
+    v.includes('media') ||
+    v.includes('press') ||
+    v.includes('journal') ||
+    v.includes('magazine')
+  ) {
+    return 'news and media';
+  }
+
+  // Education / learning
+  if (
+    v.includes('educat') ||
+    v.includes('learn') ||
+    v.includes('course') ||
+    v.includes('study') ||
+    v.includes('school') ||
+    v.includes('academy')
+  ) {
+    return 'education';
+  }
+
+  // Health & fitness
+  if (
+    v.includes('fit') ||
+    v.includes('health') ||
+    v.includes('gym') ||
+    v.includes('sport') ||
+    v.includes('workout') ||
+    v.includes('wellness')
+  ) {
+    return 'health & fitness';
+  }
+
+  return 'other';
+}
+
 export const CATEGORY_CHART_COLORS = {
-  streaming: '#6366F1', // Indigo
-  software: '#1F6F54',  // Subtrack Ledger Forest Green
-  fitness: '#F59E0B',   // Amber
-  news: '#0EA5E9',      // Sky blue
-  cloud: '#06B6D4',     // Cyan
-  gaming: '#8B5CF6',    // Purple
-  other: '#78716C',     // Warm stone
+  'software / ai': '#1F6F54',   // Forest Green (Primary SubTrack Ledger)
+  ai: '#0D9488',                // Deep Teal / Mint
+  entertainment: '#2563EB',     // Royal Blue
+  gaming: '#7C3AED',            // Violet / Purple
+  'news and media': '#0284C7',  // Sky / Ocean Blue
+  education: '#16A34A',         // Vibrant Leaf Green
+  'health & fitness': '#EA580C',// Warm Amber / Orange
+  other: '#64748B',             // Slate Grey
 };
 
 export function getCategoryChartColor(category = 'other') {
-  return CATEGORY_CHART_COLORS[category.toLowerCase()] || '#78716C';
+  const norm = normalizeCategory(category).toLowerCase();
+  return CATEGORY_CHART_COLORS[norm] || CATEGORY_CHART_COLORS.other;
 }
 
-const CATEGORY_COLORS = {
-  streaming: { bg: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-  software: { bg: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  fitness: { bg: 'bg-amber-50 text-amber-800 border-amber-200' },
-  news: { bg: 'bg-sky-50 text-sky-700 border-sky-200' },
-  cloud: { bg: 'bg-cyan-50 text-cyan-700 border-cyan-200' },
+export const CATEGORY_COLORS = {
+  'software / ai': { bg: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
+  ai: { bg: 'bg-teal-50 text-teal-800 border-teal-200' },
+  entertainment: { bg: 'bg-blue-50 text-blue-700 border-blue-200' },
   gaming: { bg: 'bg-purple-50 text-purple-700 border-purple-200' },
+  'news and media': { bg: 'bg-sky-50 text-sky-700 border-sky-200' },
+  education: { bg: 'bg-green-50 text-green-800 border-green-200' },
+  'health & fitness': { bg: 'bg-orange-50 text-orange-800 border-orange-200' },
   other: { bg: 'bg-stone-100 text-stone-700 border-stone-200' },
 };
 
@@ -233,6 +333,17 @@ export function getInitials(name = '') {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
+export function formatCategoryLabel(cat = '') {
+  if (!cat) return 'Other';
+  const c = String(cat).toLowerCase().trim();
+  if (c === 'ai') return 'AI';
+  if (c === 'software / ai' || c === 'software/ai') return 'Software / AI';
+  if (c === 'news and media' || c === 'news & media') return 'News & Media';
+  if (c === 'health & fitness' || c === 'health and fitness') return 'Health & Fitness';
+  return cat.charAt(0).toUpperCase() + cat.slice(1);
+}
+
 export function getCategoryStyle(category = 'other') {
-  return CATEGORY_COLORS[category.toLowerCase()] || CATEGORY_COLORS.other;
+  const norm = normalizeCategory(category).toLowerCase();
+  return CATEGORY_COLORS[norm] || CATEGORY_COLORS.other;
 }
