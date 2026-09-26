@@ -1,4 +1,5 @@
 import { query } from '../config/db.js';
+import { normalizeCategory } from '../services/geminiService.js';
 
 const COLUMNS = `
   id, user_id AS "userId", name, category, amount, currency,
@@ -21,6 +22,7 @@ export const subscriptionModel = {
     const cancellationDeadline = isFreeTrial && data.cancellationDeadline ? String(data.cancellationDeadline).slice(0, 10) : null;
     const postTrialAmount = isFreeTrial && data.postTrialAmount !== undefined && data.postTrialAmount !== null ? Number(data.postTrialAmount) : null;
     const postTrialCurrency = isFreeTrial && data.postTrialCurrency ? data.postTrialCurrency : data.currency;
+    const category = normalizeCategory(data.category);
 
     const { rows } = await query(
       `INSERT INTO subscriptions
@@ -31,7 +33,7 @@ export const subscriptionModel = {
       [
         userId,
         data.name,
-        data.category,
+        category,
         data.amount,
         data.currency,
         data.billingCycle,
@@ -71,6 +73,7 @@ export const subscriptionModel = {
     const cancellationDeadline = isFreeTrial && data.cancellationDeadline ? String(data.cancellationDeadline).slice(0, 10) : null;
     const postTrialAmount = isFreeTrial && data.postTrialAmount !== undefined && data.postTrialAmount !== null ? Number(data.postTrialAmount) : null;
     const postTrialCurrency = isFreeTrial && data.postTrialCurrency ? data.postTrialCurrency : data.currency;
+    const category = normalizeCategory(data.category);
 
     const { rows } = await query(
       `UPDATE subscriptions SET
@@ -86,7 +89,7 @@ export const subscriptionModel = {
         id,
         userId,
         data.name,
-        data.category,
+        category,
         data.amount,
         data.currency,
         data.billingCycle,
@@ -122,33 +125,9 @@ export const subscriptionModel = {
     return rows[0] || null;
   },
 
-  async updateRenewalDate(userId, id, nextRenewalDate) {
-    const { rows } = await query(
-      `UPDATE subscriptions SET
-        next_renewal_date = $3,
-        updated_at = now()
-       WHERE id = $1 AND user_id = $2
-       RETURNING ${COLUMNS}`,
-      [id, userId, nextRenewalDate]
-    );
-    return rows[0] || null;
-  },
-
-  async updateReminderSentAt(userId, id, sentAt = new Date()) {
-    const { rows } = await query(
-      `UPDATE subscriptions SET
-        last_reminder_sent_at = $3,
-        updated_at = now()
-       WHERE id = $1 AND user_id = $2
-       RETURNING ${COLUMNS}`,
-      [id, userId, sentAt]
-    );
-    return rows[0] || null;
-  },
-
-  async remove(userId, id) {
+  async delete(userId, id) {
     const { rowCount } = await query(
-      'DELETE FROM subscriptions WHERE id = $1 AND user_id = $2',
+      `DELETE FROM subscriptions WHERE id = $1 AND user_id = $2`,
       [id, userId]
     );
     return rowCount > 0;

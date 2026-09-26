@@ -1,22 +1,12 @@
 import pg from 'pg';
 import { env } from './env.js';
 
-const { Pool } = pg;
+const isProduction = env.nodeEnv === 'production';
+const isSupabase = env.databaseUrl.includes('supabase.co');
 
-const isSupabaseOrCloud =
-  Boolean(env.databaseUrl) &&
-  (env.databaseUrl.includes('supabase.co') ||
-    env.databaseUrl.includes('pooler.supabase.com') ||
-    env.databaseUrl.includes('sslmode=require') ||
-    env.nodeEnv === 'production');
-
-export const pool = new Pool({
+export const pool = new pg.Pool({
   connectionString: env.databaseUrl,
-  ssl: isSupabaseOrCloud ? { rejectUnauthorized: false } : undefined,
-});
-
-pool.on('error', (err) => {
-  console.error('Unexpected PostgreSQL client error', err);
+  ssl: isProduction || isSupabase ? { rejectUnauthorized: false } : false,
 });
 
 let schemaPromise = null;
@@ -26,36 +16,32 @@ export async function ensureSchema() {
     schemaPromise = (async () => {
       try {
         await pool.query(`
-          CREATE EXTENSION IF NOT EXISTS pgcrypto;
+          DO $$
+          BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'billing_cycle') THEN
+              CREATE TYPE billing_cycle AS ENUM ('weekly', 'monthly', 'quarterly', 'yearly');
+            END IF;
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'subscription_status') THEN
+              CREATE TYPE subscription_status AS ENUM ('active', 'paused', 'cancelled');
+            END IF;
+          END
+          $$;
 
           CREATE TABLE IF NOT EXISTS users (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             name TEXT NOT NULL,
-            email TEXT NOT NULL UNIQUE,
+            email TEXT UNIQUE NOT NULL,
             password_hash TEXT,
-            google_id TEXT,
+            google_id TEXT UNIQUE,
             avatar_url TEXT,
             base_currency TEXT NOT NULL DEFAULT 'USD',
-            reminder_days_before INT NOT NULL DEFAULT 3,
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
           );
 
-          ALTER TABLE users ADD COLUMN IF NOT EXISTS base_currency TEXT NOT NULL DEFAULT 'USD';
-          ALTER TABLE users ADD COLUMN IF NOT EXISTS reminder_days_before INT NOT NULL DEFAULT 3;
-          ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT;
-          ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
           ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
+          ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT UNIQUE;
+          ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
           CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
-          
-          DO $$ BEGIN
-            CREATE TYPE billing_cycle AS ENUM ('weekly', 'monthly', 'quarterly', 'yearly');
-          EXCEPTION WHEN duplicate_object THEN NULL;
-          END $$;
-
-          DO $$ BEGIN
-            CREATE TYPE subscription_status AS ENUM ('active', 'paused', 'cancelled');
-          EXCEPTION WHEN duplicate_object THEN NULL;
-          END $$;
 
           CREATE TABLE IF NOT EXISTS subscriptions (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -89,8 +75,13 @@ export async function ensureSchema() {
 
           CREATE INDEX IF NOT EXISTS idx_subscriptions_trial ON subscriptions(is_free_trial, trial_end_date);
 
-          CREATE TABLE IF NOT EXISTS price_history (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          -- Category harmonization migrations
+          UPDATE subscriptions SET category = 'entertainment' WHERE LOWER(category) IN ('streaming');
+          UPDATE subscriptions SET category = 'software / AI' WHERE LOWER(category) IN ('software', 'cloud', 'infrastructure', 'utilities');
+          UPDATE subscriptions SET category = 'news and media' WHERE LOWER(category) IN ('news');
+          UPDATE subscriptions SET category = 'health & fitness' WHERE LOWER(category) IN ('fitness', 'health');
+
+          CREATE TABLE IF NOT EXISTS price_history (\n            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             subscription_id UUID NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
             old_amount NUMERIC(10, 2) NOT NULL,
             new_amount NUMERIC(10, 2) NOT NULL,
