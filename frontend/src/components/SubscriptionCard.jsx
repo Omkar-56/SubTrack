@@ -13,7 +13,6 @@ export default function SubscriptionCard({
   baseCurrency = 'USD',
   onEdit,
   onDelete,
-  onAdvance,
   onConfirmPayment,
   onViewPayments,
   onCancelGuide,
@@ -187,26 +186,15 @@ export default function SubscriptionCard({
             </button>
           )}
 
-          {/* Advance renewal by 1 cycle */}
-          {subscription.status === 'active' && onAdvance && !isTrial && (
-            <button
-              onClick={() => onAdvance(subscription)}
-              className="rounded-xs border border-line px-2 py-1 text-xs text-ink/60 hover:border-line hover:text-ink hover:bg-paper transition-colors cursor-pointer"
-              title="Skip or advance next renewal by one cycle without logging payment"
-            >
-              +1 cycle
-            </button>
-          )}
-
           <button
             onClick={() => onEdit(subscription)}
-            className="rounded-xs border border-line px-2 py-1 text-xs text-ink/60 hover:border-line hover:text-ink hover:bg-paper transition-colors cursor-pointer"
+            className="rounded-xs border border-line px-2 py-1 text-xs text-ink hover:border-line hover:text-ink hover:bg-paper transition-colors cursor-pointer"
           >
             Edit
           </button>
           <button
             onClick={() => onDelete(subscription)}
-            className="rounded-xs border border-transparent px-2 py-1 text-xs text-rust/70 hover:border-rust/20 hover:bg-rust-light hover:text-rust transition-colors cursor-pointer"
+            className="rounded-xs border border-transparent px-2 py-1 text-xs text-rust hover:border-rust/20 hover:bg-rust-light hover:text-rust transition-colors cursor-pointer"
           >
             Delete
           </button>

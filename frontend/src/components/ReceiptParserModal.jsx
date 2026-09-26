@@ -193,8 +193,10 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-line px-5 py-4">
           <div className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-amber-light text-amber-dark text-base">
-              ✨
+            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-stone-100 text-ink border border-line/60">
+              <svg className="h-4 w-4 text-ink/75" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
             </span>
             <div>
               <h2 className="font-display text-base sm:text-lg font-semibold text-ink">
@@ -219,8 +221,10 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
           {/* Success State View */}
           {successResult ? (
             <div className="space-y-4 text-center py-2">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-2xl">
-                ✓
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                </svg>
               </div>
               <div>
                 <h3 className="font-display text-base font-semibold text-ink">
@@ -333,7 +337,9 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
                       </div>
                     ) : (
                       <>
-                        <span className="text-3xl mb-2">📄</span>
+                        <svg className="h-9 w-9 mb-2 text-ink/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
                         <p className="text-xs font-medium text-ink">
                           {file ? file.name : 'Click to select or drag and drop a receipt'}
                         </p>
@@ -415,7 +421,7 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
               disabled={isProcessing || (tab === 'upload' && !file) || (tab === 'text' && !pastedText.trim())}
               className="flex items-center gap-1.5 rounded bg-ledger px-4 py-1.5 text-xs font-semibold text-white shadow-2xs hover:bg-ledger-dark transition-colors disabled:opacity-50 cursor-pointer"
             >
-              <span>{isProcessing ? 'Parsing…' : '✨ Parse & Add with Gemini'}</span>
+              <span>{isProcessing ? 'Parsing…' : 'Parse & Add with Gemini'}</span>
             </button>
           </div>
         )}

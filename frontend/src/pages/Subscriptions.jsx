@@ -102,15 +102,6 @@ export default function Subscriptions() {
     }
   }
 
-  async function handleAdvance(subscription) {
-    try {
-      await api.advanceSubscription(subscription.id);
-      refresh();
-    } catch (err) {
-      setError(err.message);
-    }
-  }
-
   async function handleConfirmPayment(paymentData) {
     if (!payingSub) return;
     await api.confirmPayment(payingSub.id, paymentData);
@@ -259,10 +250,12 @@ export default function Subscriptions() {
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => setShowReceiptParser(true)}
-            className="flex items-center gap-1.5 rounded-sm border border-line bg-white px-3.5 py-2 text-sm font-medium text-ink shadow-2xs hover:bg-stone-50 transition-colors cursor-pointer"
+            className="flex items-center gap-2 rounded-sm border border-line bg-white px-3.5 py-2 text-sm font-medium text-ink shadow-2xs hover:bg-stone-50 transition-colors cursor-pointer"
             title="Upload invoice, document, screenshot, or paste text to auto-create subscriptions with Gemini"
           >
-            <span>✨</span>
+            <svg className="h-4 w-4 text-ink/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
             <span>Upload Receipt / AI Parse</span>
           </button>
           <button
@@ -489,7 +482,6 @@ export default function Subscriptions() {
               setShowForm(false);
               setEditing(sub);
             }}
-            onAdvance={handleAdvance}
             onConvertTrial={handleConvertTrial}
             onConfirmPayment={(sub) => setPayingSub(sub)}
             onCancelGuide={(sub) => setGuideSub(sub)}
