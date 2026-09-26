@@ -1,5 +1,6 @@
 import BrandLogo from './BrandLogo';
 import { formatDate, formatMoney, daysUntil } from '../utils/date';
+import { formatCategoryLabel } from '../utils/brands';
 
 const STATUS_BADGE = {
   active: 'bg-ledger-light text-ledger-dark border-ledger/20',
@@ -45,7 +46,7 @@ export default function SubscriptionCard({
               </span>
             ) : (
               <span className="rounded bg-stone-100 px-1.5 py-0.5 text-xs text-ink/60 border border-stone-200/60">
-                {subscription.category}
+                {formatCategoryLabel(subscription.category)}
               </span>
             )}
 
@@ -98,116 +99,114 @@ export default function SubscriptionCard({
             )}
           </div>
 
-          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-ink/60">
+          <p className="mt-0.5 text-xs text-ink/60">
             {isTrial ? (
               <>
-                <span className="text-amber-dark font-medium">
-                  Cutoff: <strong>{formatDate(deadlineDate)}</strong>
-                </span>
-                <span>·</span>
                 <span>
-                  Post-trial: <strong>{formatMoney(subscription.postTrialAmount || subscription.amount, subscription.postTrialCurrency || subscription.currency)}</strong>/{subscription.billingCycle === 'yearly' ? 'yr' : 'mo'}
+                  Trial ends {formatDate(subscription.trialEndDate || subscription.nextRenewalDate)}
                 </span>
+                {subscription.postTrialAmount && (
+                  <span className="ml-2 font-medium text-ink/80">
+                    • Then {formatMoney(subscription.postTrialAmount, subscription.postTrialCurrency || subscription.currency)} / {subscription.billingCycle}
+                  </span>
+                )}
               </>
             ) : (
               <>
                 <span className="capitalize">{subscription.billingCycle}</span>
-                <span>·</span>
-                <span>Next: <strong>{formatDate(subscription.nextRenewalDate)}</strong></span>
+                <span className="mx-1">•</span>
+                <span>Next: {formatDate(subscription.nextRenewalDate)}</span>
               </>
             )}
-
             {subscription.notes && (
               <>
-                <span>·</span>
-                <span className="truncate max-w-[200px] text-ink/40 italic" title={subscription.notes}>
-                  "{subscription.notes}"
-                </span>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="flex shrink-0 items-center gap-3 sm:gap-4">
-        <div className="text-right">
-          <p className="tabular font-display text-base font-semibold text-ink">
-            {isTrial && Number(subscription.amount) === 0 ? (
-              <span className="text-emerald-700 font-bold">FREE TRIAL</span>
-            ) : (
-              <>
-                {formatMoney(subscription.amount, subscription.currency)}
-                <span className="text-xs font-normal text-ink/50">
-                  /{subscription.billingCycle === 'yearly' ? 'yr' : subscription.billingCycle === 'weekly' ? 'wk' : 'mo'}
-                </span>
+                <span className="mx-1">•</span>
+                <span className="italic text-ink/50">{subscription.notes}</span>
               </>
             )}
           </p>
-          {isDifferentCurrency && (
-            <p className="tabular text-[11px] text-ink/40">
+        </div>
+      </div>
+
+      <div className="flex shrink-0 items-center gap-3">
+        <div className="text-right">
+          <p className="tabular font-display text-base font-semibold text-ink">
+            {formatMoney(subscription.amount, subscription.currency)}
+          </p>
+          {isDifferentCurrency ? (
+            <p className="tabular text-[11px] font-medium text-ledger-dark" title={`Converted using live rates`}>
               ≈ {formatMoney(subscription.convertedAmount, baseCurrency)}
             </p>
+          ) : (
+            <p className="text-[11px] text-ink/50 capitalize">per {subscription.billingCycle}</p>
           )}
         </div>
 
-        <div className="flex items-center gap-1 opacity-90 transition-opacity">
-          {/* Trial Convert to Active action */}
+        <div className="flex items-center gap-1 opacity-80 transition-opacity group-hover:opacity-100">
+          {/* Trial Sentinel Convert Button */}
           {isTrial && subscription.status === 'active' && onConvertTrial && (
             <button
               onClick={() => onConvertTrial(subscription)}
-              className="rounded bg-ledger-light border border-ledger/30 px-2 py-1 text-xs font-semibold text-ledger-dark hover:bg-ledger hover:text-white transition-colors shadow-2xs"
-              title="Convert this free trial to a regular ongoing subscription"
+              className="rounded-xs border border-ledger/30 bg-ledger-light px-2 py-1 text-xs font-semibold text-ledger-dark hover:bg-ledger hover:text-white transition-colors cursor-pointer"
+              title="Convert this trial into an active paid subscription"
             >
-              ✓ Keep Sub
+              Keep & Convert
             </button>
           )}
 
-          {/* Regular Confirm Payment button */}
-          {!isTrial && subscription.status === 'active' && onConfirmPayment && (
-            <button
-              onClick={() => onConfirmPayment(subscription)}
-              className="rounded bg-ledger-light border border-ledger/30 px-2 py-1 text-xs font-semibold text-ledger-dark hover:bg-ledger hover:text-white transition-colors shadow-2xs"
-              title="Confirm you paid this cycle and roll over to the next due date"
-            >
-              ✓ Paid
-            </button>
-          )}
-
-          {/* Cancellation Guide / Direct Link Assistant */}
-          {subscription.status !== 'cancelled' && onCancelGuide && (
+          {/* Cancellation Guide Button */}
+          {onCancelGuide && subscription.status === 'active' && (
             <button
               onClick={() => onCancelGuide(subscription)}
-              className={`rounded border px-2 py-1 text-xs font-medium transition-colors ${
-                isTrial
-                  ? 'border-rust/40 bg-rust-light text-rust hover:bg-rust hover:text-white'
-                  : 'border-line bg-paper text-ink/70 hover:border-rust/40 hover:bg-rust-light hover:text-rust'
-              }`}
-              title={isTrial ? 'Cancel trial before deadline to avoid post-trial bill' : 'View direct cancellation link and instructions'}
+              className="rounded-xs border border-line bg-paper px-2 py-1 text-xs font-medium text-ink hover:bg-line/40 transition-colors cursor-pointer"
+              title="How to cancel this subscription (direct link & instructions)"
             >
               Cancel Guide
             </button>
           )}
 
-          {/* Receipts button */}
-          {onViewPayments && !isTrial && (
+          {/* Payment Receipts History Button */}
+          {onViewPayments && (
             <button
               onClick={() => onViewPayments(subscription)}
-              className="hidden sm:inline-block rounded px-2 py-1 text-xs font-medium text-ink/60 hover:bg-stone-100 hover:text-ink transition-colors"
-              title="View past confirmed payments for this subscription"
+              className="rounded-xs border border-line bg-paper px-2 py-1 text-xs font-medium text-ink hover:bg-line/40 transition-colors cursor-pointer"
+              title="View payment receipt history for this subscription"
             >
               Receipts
             </button>
           )}
 
+          {/* Mark as Paid / Confirm Payment Button */}
+          {onConfirmPayment && subscription.status === 'active' && (
+            <button
+              onClick={() => onConfirmPayment(subscription)}
+              className="rounded-xs border border-ledger/40 bg-ledger/10 px-2 py-1 text-xs font-semibold text-ledger hover:bg-ledger hover:text-white transition-colors cursor-pointer"
+              title="Record that you paid this renewal"
+            >
+              ✓ Paid
+            </button>
+          )}
+
+          {/* Advance renewal by 1 cycle */}
+          {subscription.status === 'active' && onAdvance && !isTrial && (
+            <button
+              onClick={() => onAdvance(subscription)}
+              className="rounded-xs border border-line px-2 py-1 text-xs text-ink/60 hover:border-line hover:text-ink hover:bg-paper transition-colors cursor-pointer"
+              title="Skip or advance next renewal by one cycle without logging payment"
+            >
+              +1 cycle
+            </button>
+          )}
+
           <button
             onClick={() => onEdit(subscription)}
-            className="rounded px-2 py-1 text-xs font-medium text-ink/60 hover:bg-stone-100 hover:text-ledger transition-colors"
+            className="rounded-xs border border-line px-2 py-1 text-xs text-ink/60 hover:border-line hover:text-ink hover:bg-paper transition-colors cursor-pointer"
           >
             Edit
           </button>
           <button
             onClick={() => onDelete(subscription)}
-            className="rounded px-2 py-1 text-xs font-medium text-ink/60 hover:bg-rust-light hover:text-rust transition-colors"
+            className="rounded-xs border border-transparent px-2 py-1 text-xs text-rust/70 hover:border-rust/20 hover:bg-rust-light hover:text-rust transition-colors cursor-pointer"
           >
             Delete
           </button>

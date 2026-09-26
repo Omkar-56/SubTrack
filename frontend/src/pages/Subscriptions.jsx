@@ -3,10 +3,12 @@ import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import SubscriptionCard from '../components/SubscriptionCard';
 import SubscriptionForm from '../components/SubscriptionForm';
+import ReceiptParserModal from '../components/ReceiptParserModal';
 import PaymentConfirmModal from '../components/PaymentConfirmModal';
 import PaymentHistoryModal from '../components/PaymentHistoryModal';
 import CancellationGuideModal from '../components/CancellationGuideModal';
 import { formatMoney } from '../utils/date';
+import { formatCategoryLabel } from '../utils/brands';
 
 const CYCLE_TO_MONTHS = {
   weekly: 12 / 52,
@@ -27,6 +29,7 @@ export default function Subscriptions() {
   const [priceIncreases, setPriceIncreases] = useState([]);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [showReceiptParser, setShowReceiptParser] = useState(false);
   const [editing, setEditing] = useState(null);
 
   // Modals for Payment Confirmation, History & Cancellation Guides
@@ -253,15 +256,33 @@ export default function Subscriptions() {
             Everything you're paying for or trialing, in one searchable ledger.
           </p>
         </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="rounded-sm bg-ledger px-4 py-2 text-sm font-medium text-white shadow-2xs hover:bg-ledger-dark transition-colors cursor-pointer"
-        >
-          + Add subscription
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setShowReceiptParser(true)}
+            className="flex items-center gap-1.5 rounded-sm border border-line bg-white px-3.5 py-2 text-sm font-medium text-ink shadow-2xs hover:bg-stone-50 transition-colors cursor-pointer"
+            title="Upload invoice, document, screenshot, or paste text to auto-create subscriptions with Gemini"
+          >
+            <span>✨</span>
+            <span>Upload Receipt / AI Parse</span>
+          </button>
+          <button
+            onClick={() => setShowForm(true)}
+            className="rounded-sm bg-ledger px-4 py-2 text-sm font-medium text-white shadow-2xs hover:bg-ledger-dark transition-colors cursor-pointer"
+          >
+            + Add subscription
+          </button>
+        </div>
       </div>
 
       {error && <p className="text-sm text-rust">{error}</p>}
+
+      {showReceiptParser && (
+        <ReceiptParserModal
+          isOpen={showReceiptParser}
+          onClose={() => setShowReceiptParser(false)}
+          onParsed={() => refresh()}
+        />
+      )}
 
       {showForm && (
         <SubscriptionForm
@@ -377,8 +398,8 @@ export default function Subscriptions() {
             >
               <option value="all">All Categories</option>
               {availableCategories.map((c) => (
-                <option key={c} value={c} className="capitalize">
-                  {c}
+                <option key={c} value={c}>
+                  {formatCategoryLabel(c)}
                 </option>
               ))}
             </select>

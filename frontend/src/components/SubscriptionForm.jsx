@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import BrandLogo from './BrandLogo';
+import { VALID_CATEGORIES, normalizeCategory } from '../utils/brands';
 
-const CATEGORIES = ['streaming', 'software', 'fitness', 'news', 'cloud', 'gaming', 'other'];
+const CATEGORIES = VALID_CATEGORIES;
 const CYCLES = ['weekly', 'monthly', 'quarterly', 'yearly'];
 const COMMON_CURRENCIES = ['USD', 'EUR', 'GBP', 'INR', 'CAD', 'AUD', 'JPY', 'CHF', 'SGD', 'BRL'];
 
@@ -32,6 +33,7 @@ export default function SubscriptionForm({ initial, defaultCurrency = 'USD', onS
     return {
       ...emptyForm,
       ...initial,
+      category: initial.category ? normalizeCategory(initial.category) : 'other',
       amount: initial.amount !== undefined ? initial.amount : '',
       currency: initial.currency || defaultCurrency || 'USD',
       postTrialAmount: initial.postTrialAmount !== undefined && initial.postTrialAmount !== null ? initial.postTrialAmount : '',
@@ -79,6 +81,7 @@ export default function SubscriptionForm({ initial, defaultCurrency = 'USD', onS
 
       const payload = {
         ...form,
+        category: normalizeCategory(form.category),
         currency: finalCurrency,
         amount: form.isFreeTrial ? (Number(form.amount) || 0) : (Number(form.amount) || 0),
         reminderDaysBefore: 3, // Default 3 days Sentinel alert window
@@ -168,33 +171,31 @@ export default function SubscriptionForm({ initial, defaultCurrency = 'USD', onS
               {form.isFreeTrial && (
                 <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-amber/20">
                   <div>
-                    <label className="text-xs font-semibold text-ink">
-                      Trial End Date <span className="text-rust">*</span>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-ink/70">
+                      Trial End Date *
                     </label>
                     <input
                       required={form.isFreeTrial}
                       type="date"
                       value={form.trialEndDate}
                       onChange={(e) => update('trialEndDate', e.target.value)}
-                      className="mt-1 w-full rounded-sm border border-amber/40 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-ledger"
+                      className="mt-1 w-full rounded-sm border border-line bg-white px-3 py-2 text-sm outline-none focus:border-ledger focus:ring-1 focus:ring-ledger"
                     />
-                    <p className="text-[10px] text-ink/50 mt-0.5">Alerts trigger 3 days prior</p>
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-ink">
-                      Post-Trial Charge ({form.currency})
+                    <label className="text-xs font-semibold uppercase tracking-wider text-ink/70">
+                      Charge After Trial ({form.currency})
                     </label>
                     <input
                       type="number"
                       min="0"
                       step="0.01"
-                      placeholder="e.g. 199.00"
+                      placeholder="e.g. 14.99"
                       value={form.postTrialAmount}
                       onChange={(e) => update('postTrialAmount', e.target.value)}
-                      className="mt-1 w-full rounded-sm border border-amber/40 bg-white px-2.5 py-1.5 text-xs outline-none focus:border-ledger"
+                      className="mt-1 w-full rounded-sm border border-line bg-white px-3 py-2 text-sm tabular outline-none focus:border-ledger focus:ring-1 focus:ring-ledger"
                     />
-                    <p className="text-[10px] text-ink/50 mt-0.5">Price if not cancelled in time</p>
                   </div>
                 </div>
               )}
