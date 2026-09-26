@@ -1,5 +1,6 @@
 import { subscriptionService } from '../services/subscriptionService.js';
 import { reminderService } from '../services/reminderService.js';
+import { geminiService } from '../services/geminiService.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 export const subscriptionController = {
@@ -11,6 +12,32 @@ export const subscriptionController = {
   create: asyncHandler(async (req, res) => {
     const subscription = await subscriptionService.create(req.user.id, req.body);
     res.status(201).json({ subscription });
+  }),
+
+  parseReceipt: asyncHandler(async (req, res) => {
+    const { text, fileBase64, mimeType } = req.body;
+    const defaultCurrency = req.user.baseCurrency || 'USD';
+
+    // 1. Ask Gemini to extract structured subscriptions
+    const extracted = await geminiService.parseReceiptOrDoc({
+      text,
+      fileBase64,
+      mimeType,
+      defaultCurrency,
+    });
+
+    // 2. Automatically create each subscription in the user's account
+    const createdSubscriptions = [];
+    for (const item of extracted) {
+      const created = await subscriptionService.create(req.user.id, item);
+      createdSubscriptions.push(created);
+    }
+
+    res.json({
+      success: true,
+      extractedCount: extracted.length,
+      subscriptions: createdSubscriptions,
+    });
   }),
 
   get: asyncHandler(async (req, res) => {
@@ -49,28 +76,28 @@ export const subscriptionController = {
     res.json({ payments });
   }),
 
+  priceHistory: asyncHandler(async (req, res) => {
+    const history = await subscriptionService.priceHistory(req.user.id, req.params.id);
+    res.json({ history });
+  }),
+
   reminders: asyncHandler(async (req, res) => {
-    const reminders = await reminderService.getPendingReminders(req.user.id);
+    const reminders = await reminderService.getUpcomingReminders(req.user.id);
     res.json({ reminders });
   }),
 
   dismissReminder: asyncHandler(async (req, res) => {
-    await reminderService.dismissReminder(req.user.id, req.params.id);
+    await reminderService.dismiss(req.user.id, req.params.id);
     res.json({ success: true });
   }),
 
   triggerReminder: asyncHandler(async (req, res) => {
-    const reminder = await reminderService.triggerManualReminder(req.user.id, req.params.id);
-    res.json({ reminder });
+    const reminder = await reminderService.triggerImmediateReminder(req.user.id, req.params.id);
+    res.json({ success: true, reminder });
   }),
 
   remove: asyncHandler(async (req, res) => {
-    await subscriptionService.remove(req.user.id, req.params.id);
-    res.status(204).send();
-  }),
-
-  priceHistory: asyncHandler(async (req, res) => {
-    const history = await subscriptionService.priceHistory(req.user.id, req.params.id);
-    res.json({ history });
+    await subscriptionService.delete(req.user.id, req.params.id);
+    res.status(204).end();
   }),
 };

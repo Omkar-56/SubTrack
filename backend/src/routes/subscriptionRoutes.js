@@ -11,6 +11,7 @@ router.use(requireAuth);
 // Collection routes
 router.get('/', subscriptionController.list);
 router.post('/', validate(subscriptionSchema), subscriptionController.create);
+router.post('/parse-receipt', subscriptionController.parseReceipt);
 router.get('/reminders', subscriptionController.reminders);
 router.post('/reminders/:id/dismiss', subscriptionController.dismissReminder);
 router.get('/payments/recent', subscriptionController.allPayments);
