@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import BrandLogo from './BrandLogo';
-import { VALID_CATEGORIES, normalizeCategory } from '../utils/brands';
+import { VALID_CATEGORIES, formatCategoryLabel, normalizeCategory } from '../utils/brands';
 
 const CATEGORIES = VALID_CATEGORIES;
 const CYCLES = ['weekly', 'monthly', 'quarterly', 'yearly'];
@@ -36,6 +36,7 @@ export default function SubscriptionForm({ initial, defaultCurrency = 'USD', onS
       category: initial.category ? normalizeCategory(initial.category) : 'other',
       amount: initial.amount !== undefined ? initial.amount : '',
       currency: initial.currency || defaultCurrency || 'USD',
+      reminderDaysBefore: initial.reminderDaysBefore || 3,
       postTrialAmount: initial.postTrialAmount !== undefined && initial.postTrialAmount !== null ? initial.postTrialAmount : '',
       trialEndDate: initial.trialEndDate ? String(initial.trialEndDate).slice(0, 10) : initial.nextRenewalDate ? String(initial.nextRenewalDate).slice(0, 10) : '',
       nextRenewalDate: initial.nextRenewalDate ? String(initial.nextRenewalDate).slice(0, 10) : '',
@@ -53,30 +54,19 @@ export default function SubscriptionForm({ initial, defaultCurrency = 'USD', onS
     };
   }, []);
 
-  function update(field, value) {
-    setForm((f) => {
-      const next = { ...f, [field]: value };
-
-      if (field === 'isFreeTrial' && value === true) {
-        if (!next.amount || Number(next.amount) === 0) {
-          next.amount = '0.00';
-        }
-      }
-
-      if (field === 'trialEndDate' && value) {
-        next.nextRenewalDate = value;
-      }
-
-      return next;
-    });
+  function update(key, val) {
+    setForm((prev) => ({ ...prev, [key]: val }));
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
     setSubmitting(true);
+
     try {
-      const finalCurrency = (form.currency || 'USD').toUpperCase();
+      const finalCurrency = form.currency.trim().toUpperCase();
+      if (!finalCurrency) throw new Error('Please select or specify a 3-letter currency code.');
+
       const trialEnd = form.isFreeTrial && form.trialEndDate ? form.trialEndDate : null;
 
       const payload = {
@@ -84,7 +74,7 @@ export default function SubscriptionForm({ initial, defaultCurrency = 'USD', onS
         category: normalizeCategory(form.category),
         currency: finalCurrency,
         amount: form.isFreeTrial ? (Number(form.amount) || 0) : (Number(form.amount) || 0),
-        reminderDaysBefore: 3, // Default 3 days Sentinel alert window
+        reminderDaysBefore: form.reminderDaysBefore ? Number(form.reminderDaysBefore) : 3,
         isFreeTrial: Boolean(form.isFreeTrial),
         trialEndDate: trialEnd,
         cancellationDeadline: trialEnd,
@@ -119,86 +109,52 @@ export default function SubscriptionForm({ initial, defaultCurrency = 'USD', onS
           </div>
           <button
             onClick={onCancel}
-            type="button"
-            className="rounded p-1 text-ink/40 hover:bg-stone-100 hover:text-ink transition-colors cursor-pointer"
+            className="text-ink/40 hover:text-ink text-xl font-light p-1 rounded hover:bg-stone-100 cursor-pointer"
           >
             ✕
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+          {/* Mode Switcher: Regular Paid Subscription vs Free Trial Sentinel */}
+          <div className="flex rounded-sm bg-stone-100 p-1 text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => update('isFreeTrial', false)}
+              className={`flex-1 rounded-xs py-1.5 transition-all cursor-pointer ${
+                !form.isFreeTrial ? 'bg-white text-ink shadow-2xs' : 'text-ink/50 hover:text-ink'
+              }`}
+            >
+              Paid Subscription
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                update('isFreeTrial', true);
+                if (form.amount === '') update('amount', 0);
+              }}
+              className={`flex-1 rounded-xs py-1.5 transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                form.isFreeTrial ? 'bg-amber-light text-amber shadow-2xs' : 'text-ink/50 hover:text-ink'
+              }`}
+            >
+              <span>🛡️</span>
+              <span>Free Trial Sentinel</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Service Name */}
-            <div className="col-span-2">
+            <div>
               <label className="text-xs font-semibold uppercase tracking-wider text-ink/70">
-                Service Name
+                Service / Merchant
               </label>
               <input
                 required
-                placeholder="e.g. Netflix, GitHub, Spotify, Apple TV+"
+                placeholder="e.g. Netflix, Spotify, AWS"
                 value={form.name}
                 onChange={(e) => update('name', e.target.value)}
                 className="mt-1 w-full rounded-sm border border-line px-3 py-2 text-sm outline-none focus:border-ledger focus:ring-1 focus:ring-ledger"
               />
-            </div>
-
-            {/* Simplified Free Trial Toggle Box */}
-            <div className="col-span-2 rounded-md border border-amber/40 bg-amber-light/30 p-3.5">
-              <label className="flex items-center justify-between cursor-pointer">
-                <div className="flex items-center gap-2.5">
-                  <input
-                    type="checkbox"
-                    checked={form.isFreeTrial}
-                    onChange={(e) => update('isFreeTrial', e.target.checked)}
-                    className="h-4 w-4 rounded border-amber text-ledger focus:ring-ledger cursor-pointer"
-                  />
-                  <div>
-                    <span className="font-display text-sm font-semibold text-ink flex items-center gap-1.5">
-                      🛡️ Free Trial / Promo Mode
-                    </span>
-                    <p className="text-xs text-ink/65">
-                      Get Sentinel alert 3 days before expiry to cancel before being billed.
-                    </p>
-                  </div>
-                </div>
-                {form.isFreeTrial && (
-                  <span className="rounded bg-amber px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shrink-0">
-                    Sentinel Active
-                  </span>
-                )}
-              </label>
-
-              {form.isFreeTrial && (
-                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-amber/20">
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-ink/70">
-                      Trial End Date *
-                    </label>
-                    <input
-                      required={form.isFreeTrial}
-                      type="date"
-                      value={form.trialEndDate}
-                      onChange={(e) => update('trialEndDate', e.target.value)}
-                      className="mt-1 w-full rounded-sm border border-line bg-white px-3 py-2 text-sm outline-none focus:border-ledger focus:ring-1 focus:ring-ledger"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-semibold uppercase tracking-wider text-ink/70">
-                      Charge After Trial ({form.currency})
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="e.g. 14.99"
-                      value={form.postTrialAmount}
-                      onChange={(e) => update('postTrialAmount', e.target.value)}
-                      className="mt-1 w-full rounded-sm border border-line bg-white px-3 py-2 text-sm tabular outline-none focus:border-ledger focus:ring-1 focus:ring-ledger"
-                    />
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Category */}
@@ -209,44 +165,72 @@ export default function SubscriptionForm({ initial, defaultCurrency = 'USD', onS
               <select
                 value={form.category}
                 onChange={(e) => update('category', e.target.value)}
-                className="mt-1 w-full rounded-sm border border-line px-3 py-2 text-sm outline-none focus:border-ledger focus:ring-1 focus:ring-ledger cursor-pointer capitalize"
+                className="mt-1 w-full rounded-sm border border-line px-3 py-2 text-sm outline-none focus:border-ledger focus:ring-1 focus:ring-ledger cursor-pointer"
               >
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
+                {CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {formatCategoryLabel(cat)}
+                  </option>
                 ))}
               </select>
             </div>
 
-            {/* Status */}
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-ink/70">
-                Status
-              </label>
-              <select
-                value={form.status}
-                onChange={(e) => update('status', e.target.value)}
-                className="mt-1 w-full rounded-sm border border-line px-3 py-2 text-sm outline-none focus:border-ledger focus:ring-1 focus:ring-ledger cursor-pointer"
-              >
-                <option value="active">Active</option>
-                <option value="paused">Paused</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-            </div>
+            {/* Conditional Trial Sentinel Fields */}
+            {form.isFreeTrial ? (
+              <>
+                <div className="col-span-1 sm:col-span-2 rounded border border-amber/30 bg-amber-light/20 p-3">
+                  <p className="text-xs font-bold text-amber flex items-center gap-1.5">
+                    <span>🛡️ Sentinel Trial Protection</span>
+                  </p>
+                  <p className="text-[11px] text-ink/70 mt-1">
+                    Track cancellation deadlines so you cancel before being charged.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-ink/70">
+                    Trial Expiry / Cancel By
+                  </label>
+                  <input
+                    required
+                    type="date"
+                    value={form.trialEndDate}
+                    onChange={(e) => update('trialEndDate', e.target.value)}
+                    className="mt-1 w-full rounded-sm border border-line px-3 py-2 text-sm outline-none focus:border-amber focus:ring-1 focus:ring-amber"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold uppercase tracking-wider text-ink/70">
+                    Post-Trial Cost (if not cancelled)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="e.g. 19.99"
+                    value={form.postTrialAmount}
+                    onChange={(e) => update('postTrialAmount', e.target.value)}
+                    className="mt-1 w-full rounded-sm border border-line px-3 py-2 text-sm outline-none focus:border-ledger focus:ring-1 focus:ring-ledger font-mono"
+                  />
+                </div>
+              </>
+            ) : null}
 
             {/* Amount */}
             <div>
               <label className="text-xs font-semibold uppercase tracking-wider text-ink/70">
-                {form.isFreeTrial ? 'Current Trial Cost' : 'Amount'}
+                {form.isFreeTrial ? 'Initial Charge (usually 0.00)' : 'Amount'}
               </label>
               <input
                 required
                 type="number"
-                min="0"
                 step="0.01"
+                min="0"
                 placeholder="0.00"
                 value={form.amount}
                 onChange={(e) => update('amount', e.target.value)}
-                className="mt-1 w-full rounded-sm border border-line px-3 py-2 text-sm tabular outline-none focus:border-ledger focus:ring-1 focus:ring-ledger"
+                className="mt-1 w-full rounded-sm border border-line px-3 py-2 text-sm outline-none focus:border-ledger focus:ring-1 focus:ring-ledger font-mono"
               />
             </div>
 
@@ -311,15 +295,32 @@ export default function SubscriptionForm({ initial, defaultCurrency = 'USD', onS
               </div>
             )}
 
+            {/* Email Reminder Timing */}
+            <div>
+              <label className="text-xs font-semibold uppercase tracking-wider text-ink/70">
+                Email Reminder
+              </label>
+              <select
+                value={form.reminderDaysBefore || 3}
+                onChange={(e) => update('reminderDaysBefore', Number(e.target.value))}
+                className="mt-1 w-full rounded-sm border border-line px-3 py-2 text-sm outline-none focus:border-ledger focus:ring-1 focus:ring-ledger cursor-pointer"
+              >
+                <option value={1}>1 day before due</option>
+                <option value={2}>2 days before due</option>
+                <option value={3}>3 days before due (Recommended)</option>
+                <option value={7}>7 days before due</option>
+              </select>
+            </div>
+
             {/* Notes */}
-            <div className={form.isFreeTrial ? 'col-span-1' : 'col-span-2'}>
+            <div className={form.isFreeTrial ? 'col-span-1' : 'col-span-1 sm:col-span-2'}>
               <label className="text-xs font-semibold uppercase tracking-wider text-ink/70">
                 Notes (optional)
               </label>
               <textarea
                 value={form.notes}
                 onChange={(e) => update('notes', e.target.value)}
-                rows={form.isFreeTrial ? 1 : 2}
+                rows={1}
                 placeholder="e.g. Cancel before 14-day trial ends"
                 className="mt-1 w-full rounded-sm border border-line px-3 py-2 text-sm outline-none focus:border-ledger focus:ring-1 focus:ring-ledger"
               />

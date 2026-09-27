@@ -28,6 +28,8 @@ export default function Subscriptions() {
   const [subscriptions, setSubscriptions] = useState([]);
   const [priceIncreases, setPriceIncreases] = useState([]);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [sendingReminder, setSendingReminder] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [showReceiptParser, setShowReceiptParser] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -120,6 +122,7 @@ export default function Subscriptions() {
         nextRenewalDate: String(subscription.nextRenewalDate).slice(0, 10),
         status: newStatus,
         notes: subscription.notes || '',
+        reminderDaysBefore: subscription.reminderDaysBefore || 3,
         isFreeTrial: Boolean(subscription.isFreeTrial),
         trialEndDate: subscription.trialEndDate ? String(subscription.trialEndDate).slice(0, 10) : null,
         cancellationDeadline: subscription.cancellationDeadline ? String(subscription.cancellationDeadline).slice(0, 10) : null,
@@ -136,6 +139,40 @@ export default function Subscriptions() {
     if (!confirm(`Delete ${subscription.name}?`)) return;
     await api.deleteSubscription(subscription.id);
     refresh();
+  }
+
+  async function handleSendDueReminders() {
+    setSendingReminder(true);
+    setNotice('');
+    setError('');
+    try {
+      const res = await api.sendDueReminders();
+      if (res.sentCount === 0) {
+        setNotice('No subscriptions are due for an email reminder today (window: 1–3 days before due).');
+      } else {
+        setNotice(`Dispatched ${res.sentCount} reminder email${res.sentCount > 1 ? 's' : ''}!`);
+      }
+      setTimeout(() => setNotice(''), 6000);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSendingReminder(false);
+    }
+  }
+
+  async function handleTestEmail() {
+    setSendingReminder(true);
+    setNotice('');
+    setError('');
+    try {
+      const res = await api.sendTestReminderEmail();
+      setNotice(`Test reminder email dispatched to ${res.email}! ${res.note || ''}`);
+      setTimeout(() => setNotice(''), 6000);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSendingReminder(false);
+    }
   }
 
   // Extract unique categories from actual data
@@ -247,7 +284,30 @@ export default function Subscriptions() {
             Everything you're paying for or trialing, in one searchable ledger.
           </p>
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Email Reminders Quick Trigger / Test */}
+          <div className="flex items-center rounded-sm border border-line bg-white shadow-2xs overflow-hidden">
+            <button
+              onClick={handleSendDueReminders}
+              disabled={sendingReminder}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-ink hover:bg-stone-50 transition-colors cursor-pointer border-r border-line disabled:opacity-50"
+              title="Check and send email reminders for subscriptions due in 1-3 days"
+            >
+              <svg className="h-3.5 w-3.5 text-ledger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <span>{sendingReminder ? 'Checking…' : 'Check Email Reminders'}</span>
+            </button>
+            <button
+              onClick={handleTestEmail}
+              disabled={sendingReminder}
+              className="px-2.5 py-2 text-xs text-ink/60 hover:text-ink hover:bg-stone-50 transition-colors cursor-pointer disabled:opacity-50"
+              title="Send a sample reminder email to your address"
+            >
+              Send Test Email
+            </button>
+          </div>
+
           <button
             onClick={() => setShowReceiptParser(true)}
             className="flex items-center gap-2 rounded-sm border border-line bg-white px-3.5 py-2 text-sm font-medium text-ink shadow-2xs hover:bg-stone-50 transition-colors cursor-pointer"
@@ -258,6 +318,7 @@ export default function Subscriptions() {
             </svg>
             <span>Upload Receipt / AI Parse</span>
           </button>
+
           <button
             onClick={() => setShowForm(true)}
             className="rounded-sm bg-ledger px-4 py-2 text-sm font-medium text-white shadow-2xs hover:bg-ledger-dark transition-colors cursor-pointer"
@@ -266,6 +327,18 @@ export default function Subscriptions() {
           </button>
         </div>
       </div>
+
+      {notice && (
+        <div className="rounded-sm bg-ledger-light/60 border border-ledger/30 px-3.5 py-2.5 text-xs text-ledger-dark font-medium flex items-center justify-between animate-in fade-in duration-200">
+          <div className="flex items-center gap-2">
+            <svg className="h-4 w-4 text-ledger shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <span>{notice}</span>
+          </div>
+          <button onClick={() => setNotice('')} className="text-ink/40 hover:text-ink cursor-pointer ml-3">✕</button>
+        </div>
+      )}
 
       {error && <p className="text-sm text-rust">{error}</p>}
 

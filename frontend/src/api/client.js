@@ -48,9 +48,10 @@ export const api = {
   getPayments: (id) => request(`/subscriptions/${id}/payments`),
   getAllPayments: (limit = 50) => request(`/subscriptions/payments/recent?limit=${limit}`),
 
-  getReminders: () => request('/subscriptions/reminders'),
-  dismissReminder: (id) => request(`/subscriptions/reminders/${id}/dismiss`, { method: 'POST' }),
-  triggerReminder: (id) => request(`/subscriptions/${id}/remind`, { method: 'POST' }),
+  getReminders: () => request('/reminders'),
+  dismissReminder: (id) => request(`/reminders/${id}/dismiss`, { method: 'PATCH' }),
+  sendDueReminders: () => request('/reminders/send-due', { method: 'POST' }),
+  sendTestReminderEmail: () => request('/reminders/test-email', { method: 'POST' }),
 
   dashboardSummary: (withinDays = 14, currency = '') =>
     request(`/dashboard/summary?withinDays=${withinDays}${currency ? `&currency=${currency}` : ''}`),
