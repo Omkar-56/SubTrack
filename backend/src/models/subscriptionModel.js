@@ -125,6 +125,18 @@ export const subscriptionModel = {
     return rows[0] || null;
   },
 
+  async updateRenewalDate(userId, id, nextRenewalDate) {
+    const { rows } = await query(
+      `UPDATE subscriptions SET
+        next_renewal_date = $3,
+        updated_at = now()
+       WHERE id = $1 AND user_id = $2
+       RETURNING ${COLUMNS}`,
+      [id, userId, nextRenewalDate]
+    );
+    return rows[0] || null;
+  },
+
   async updateReminderSentAt(userId, id, date = new Date()) {
     const { rows } = await query(
       `UPDATE subscriptions
