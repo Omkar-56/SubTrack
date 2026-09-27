@@ -77,7 +77,7 @@ export default function App() {
           path="/subscriptions"
           element={
             <ProtectedRoute>
-              <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+              <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-20 py-8">
                 <Subscriptions />
               </main>
             </ProtectedRoute>
