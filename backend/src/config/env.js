@@ -30,4 +30,12 @@ export const env = {
   clientOrigin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
   googleClientId: process.env.GOOGLE_CLIENT_ID || '',
   geminiApiKey: process.env.GEMINI_API_KEY || '',
+  // Standard Gmail SMTP configuration via Nodemailer
+  smtpHost: process.env.SMTP_HOST || 'smtp.gmail.com',
+  smtpPort: Number(process.env.SMTP_PORT || 465),
+  smtpSecure: process.env.SMTP_SECURE !== undefined ? process.env.SMTP_SECURE === 'true' : true,
+  smtpUser: process.env.SMTP_USER || '',
+  smtpPass: process.env.SMTP_PASS || '',
+  emailFrom: process.env.EMAIL_FROM || process.env.SMTP_USER || '',
+  cronSecret: process.env.CRON_SECRET || '',
 };

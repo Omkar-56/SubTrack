@@ -45,6 +45,18 @@ export const reminderModel = {
     return rows[0] || null;
   },
 
+  async findSentTodayForSubscription(userId, subscriptionId) {
+    const { rows } = await query(
+      `SELECT id, status, due_date AS "dueDate", sent_at AS "sentAt"
+       FROM reminders
+       WHERE user_id = $1 AND subscription_id = $2 AND channel = 'email'
+         AND sent_at >= CURRENT_DATE
+       LIMIT 1`,
+      [userId, subscriptionId]
+    );
+    return rows[0] || null;
+  },
+
   async markPaidForSubscription(userId, subscriptionId) {
     const { rows } = await query(
       `UPDATE reminders

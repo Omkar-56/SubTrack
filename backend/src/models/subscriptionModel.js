@@ -125,6 +125,38 @@ export const subscriptionModel = {
     return rows[0] || null;
   },
 
+  async updateReminderSentAt(userId, id, date = new Date()) {
+    const { rows } = await query(
+      `UPDATE subscriptions
+       SET last_reminder_sent_at = $3, updated_at = now()
+       WHERE id = $1 AND user_id = $2
+       RETURNING ${COLUMNS}`,
+      [id, userId, date]
+    );
+    return rows[0] || null;
+  },
+
+  async findUpcomingAcrossAllUsers() {
+    const { rows } = await query(
+      `SELECT
+        s.id, s.user_id AS "userId", s.name, s.category, s.amount, s.currency,
+        s.billing_cycle AS "billingCycle", s.next_renewal_date AS "nextRenewalDate",
+        s.status, s.notes, COALESCE(s.reminder_days_before, 3) AS "reminderDaysBefore",
+        s.last_reminder_sent_at AS "lastReminderSentAt",
+        COALESCE(s.is_free_trial, FALSE) AS "isFreeTrial",
+        s.trial_end_date AS "trialEndDate",
+        s.cancellation_deadline AS "cancellationDeadline",
+        s.post_trial_amount AS "postTrialAmount",
+        s.post_trial_currency AS "postTrialCurrency",
+        u.email AS "userEmail", u.name AS "userName"
+       FROM subscriptions s
+       JOIN users u ON u.id = s.user_id
+       WHERE s.status = 'active'
+       ORDER BY COALESCE(s.cancellation_deadline, s.trial_end_date, s.next_renewal_date) ASC`
+    );
+    return rows;
+  },
+
   async delete(userId, id) {
     const { rowCount } = await query(
       `DELETE FROM subscriptions WHERE id = $1 AND user_id = $2`,
