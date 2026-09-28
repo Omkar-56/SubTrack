@@ -172,7 +172,6 @@ const BRAND_DOMAINS = {
 export const VALID_CATEGORIES = [
   'entertainment',
   'software / AI',
-  'AI',
   'gaming',
   'news and media',
   'education',
@@ -183,11 +182,6 @@ export const VALID_CATEGORIES = [
 export function normalizeCategory(val = '') {
   if (!val) return 'other';
   const v = String(val).toLowerCase().trim();
-
-  // AI-specific (ChatGPT, Claude, Midjourney, OpenAI, Gemini, Perplexity)
-  if (v === 'ai' || v === 'artificial intelligence' || v.includes('generative ai') || v.includes('llm')) {
-    return 'AI';
-  }
 
   // Gaming
   if (
@@ -201,8 +195,12 @@ export function normalizeCategory(val = '') {
     return 'gaming';
   }
 
-  // Software / AI or developer tooling
+  // Software / AI (including generative AI, LLMs, developer tooling, cloud)
   if (
+    v === 'ai' ||
+    v === 'artificial intelligence' ||
+    v.includes('generative ai') ||
+    v.includes('llm') ||
     v.includes('software') ||
     v.includes('cloud') ||
     v.includes('infra') ||
@@ -268,7 +266,6 @@ export function normalizeCategory(val = '') {
 
 export const CATEGORY_CHART_COLORS = {
   'software / ai': '#1F6F54',   // Forest Green (Primary SubTrack Ledger)
-  ai: '#0D9488',                // Deep Teal / Mint
   entertainment: '#2563EB',     // Royal Blue
   gaming: '#7C3AED',            // Violet / Purple
   'news and media': '#0284C7',  // Sky / Ocean Blue
@@ -284,7 +281,6 @@ export function getCategoryChartColor(category = 'other') {
 
 export const CATEGORY_COLORS = {
   'software / ai': { bg: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
-  ai: { bg: 'bg-teal-50 text-teal-800 border-teal-200' },
   entertainment: { bg: 'bg-blue-50 text-blue-700 border-blue-200' },
   gaming: { bg: 'bg-purple-50 text-purple-700 border-purple-200' },
   'news and media': { bg: 'bg-sky-50 text-sky-700 border-sky-200' },
@@ -336,8 +332,7 @@ export function getInitials(name = '') {
 export function formatCategoryLabel(cat = '') {
   if (!cat) return 'Other';
   const c = String(cat).toLowerCase().trim();
-  if (c === 'ai') return 'AI';
-  if (c === 'software / ai' || c === 'software/ai') return 'Software / AI';
+  if (c === 'software / ai' || c === 'software/ai' || c === 'ai') return 'Software / AI';
   if (c === 'news and media' || c === 'news & media') return 'News & Media';
   if (c === 'health & fitness' || c === 'health and fitness') return 'Health & Fitness';
   return cat.charAt(0).toUpperCase() + cat.slice(1);

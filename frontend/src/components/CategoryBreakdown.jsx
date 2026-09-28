@@ -1,175 +1,155 @@
 import { useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { formatMoney } from '../utils/date';
-import { getCategoryChartColor } from '../utils/brands';
-
-function formatCategoryLabel(cat) {
-  if (!cat) return 'Other';
-  const c = String(cat).toLowerCase().trim();
-  if (c === 'ai') return 'AI';
-  if (c === 'software / ai' || c === 'software/ai') return 'Software / AI';
-  if (c === 'news and media' || c === 'news & media') return 'News & Media';
-  if (c === 'health & fitness' || c === 'health and fitness') return 'Health & Fitness';
-  return cat.charAt(0).toUpperCase() + cat.slice(1);
-}
+import { getCategoryChartColor, formatCategoryLabel } from '../utils/brands';
 
 export default function CategoryBreakdown({ categories = [], totalMonthly = 0, currency = 'USD' }) {
   const [activeIndex, setActiveIndex] = useState(null);
 
   if (!categories || categories.length === 0) {
     return (
-      <div className="mt-3 border border-line bg-white px-4 py-8 text-center text-sm text-ink/50 shadow-2xs">
-        Add subscriptions to see your spend distributed by category.
+      <div className="rounded-sm border border-line bg-white p-5 shadow-2xs">
+        <h2 className="font-display text-sm font-semibold text-ink">Spend by Category</h2>
+        <p className="mt-6 text-xs text-ink/40 text-center">
+          Add subscriptions to see your spend distributed by category.
+        </p>
       </div>
     );
   }
 
-  const chartData = categories.map((c, i) => ({
+  // Pre-process items with color
+  const chartData = categories.map((c) => ({
     ...c,
     color: getCategoryChartColor(c.category),
-    index: i,
   }));
 
-  const hoveredItem = activeIndex !== null ? chartData[activeIndex] : null;
+  const activeCategory = activeIndex !== null ? chartData[activeIndex] : null;
 
   return (
-    <div className="mt-3 border border-line bg-white p-4 sm:p-5 shadow-2xs">
-      <div className="flex items-center gap-5">
-        {/* Donut Chart with Center Display */}
-        <div className="relative flex items-center justify-center w-full">
-          <div className="h-[190px] w-[190px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={chartData}
-                  dataKey="monthlySpend"
-                  nameKey="category"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={56}
-                  outerRadius={78}
-                  paddingAngle={3}
-                  onMouseEnter={(_, index) => setActiveIndex(index)}
-                  onMouseLeave={() => setActiveIndex(null)}
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={entry.color}
-                      stroke="#ffffff"
-                      strokeWidth={2}
-                      className="cursor-pointer transition-opacity duration-200"
-                      style={{
-                        opacity: activeIndex === null || activeIndex === index ? 1 : 0.35,
-                        transform: activeIndex === index ? 'scale(1.04)' : 'scale(1)',
-                        transformOrigin: 'center center',
-                      }}
-                    />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
+    <div className="rounded-sm border border-line bg-white p-5 shadow-2xs flex flex-col justify-between">
+      <div>
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-sm font-semibold text-ink">Spend by Category</h2>
+          <span className="text-xs text-ink/40">
+            {categories.length} {categories.length === 1 ? 'category' : 'categories'}
+          </span>
+        </div>
 
-          {/* Clean Center Callout (No Tooltip Collisions) */}
-          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-            {hoveredItem ? (
-              <>
-                <span className="max-w-[100px] truncate text-[10px] font-bold uppercase tracking-wider text-ink/60">
-                  {formatCategoryLabel(hoveredItem.category)}
-                </span>
-                <span className="tabular font-display text-base font-bold text-ink">
-                  {hoveredItem.percentage}%
-                </span>
-                <span className="tabular text-[11px] font-medium text-ink/70">
-                  {formatMoney(hoveredItem.monthlySpend, currency)}
-                  <span className="text-[10px] font-normal text-ink/40">/mo</span>
-                </span>
-                <span className="text-[10px] text-ink/40">
-                  {hoveredItem.count} {hoveredItem.count === 1 ? 'sub' : 'subs'}
-                </span>
-              </>
+        {/* Donut Chart with Centered Metric */}
+        <div className="relative mt-4 h-48 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={chartData}
+                dataKey="monthlySpend"
+                nameKey="category"
+                cx="50%"
+                cy="50%"
+                innerRadius={54}
+                outerRadius={78}
+                paddingAngle={2}
+                onMouseEnter={(_, index) => setActiveIndex(index)}
+                onMouseLeave={() => setActiveIndex(null)}
+              >
+                {chartData.map((entry, index) => (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={entry.color}
+                    className="transition-all duration-200 cursor-pointer"
+                    stroke={activeIndex === index ? '#1F6F54' : '#fff'}
+                    strokeWidth={activeIndex === index ? 2 : 1}
+                    opacity={activeIndex === null || activeIndex === index ? 1 : 0.45}
+                  />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+
+          {/* Centered Donut Label */}
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+            {activeCategory ? (
+              <div className="px-2">
+                <p className="text-[11px] font-medium text-ink/60 truncate max-w-[110px]">
+                  {formatCategoryLabel(activeCategory.category)}
+                </p>
+                <p className="font-display text-sm font-bold text-ink">
+                  {formatMoney(activeCategory.monthlySpend, currency)}
+                </p>
+                <p className="text-[10px] text-ledger font-semibold">
+                  {activeCategory.percentage}%
+                </p>
+              </div>
             ) : (
-              <>
-                <span className="text-[10px] uppercase tracking-wider font-semibold text-ink/50">
-                  Total
-                </span>
-                <span className="tabular font-display text-sm font-bold text-ink">
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-ink/40 font-medium">Monthly</p>
+                <p className="font-display text-sm font-bold text-ink">
                   {formatMoney(totalMonthly, currency)}
-                </span>
-                <span className="text-[10px] text-ink/40">/month</span>
-              </>
+                </p>
+                <p className="text-[10px] text-ink/40">total</p>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Category List & Metrics */}
-        <div className="space-y-2 w-full">
-          {chartData.map((item, index) => {
-            const isHovered = activeIndex === index;
-            return (
-              <div
-                key={item.category}
-                onMouseEnter={() => setActiveIndex(index)}
-                onMouseLeave={() => setActiveIndex(null)}
-                className={`group rounded-sm border p-2 transition-all cursor-pointer ${
-                  isHovered
-                    ? 'border-line bg-paper/80 shadow-2xs'
-                    : 'border-line/40 bg-white hover:border-line hover:bg-paper/40'
-                }`}
-              >
-                {/* Top Row: Color dot, Category Name, Sub Count, Monthly Spend */}
-                <div className="flex items-center justify-between gap-1.5 text-xs">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span
-                      className="h-2 w-2 shrink-0 rounded-full"
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <span className="font-medium text-ink truncate text-[11px] sm:text-xs">
-                      {formatCategoryLabel(item.category)}
-                    </span>
-                    <span className="rounded bg-stone-100 px-1 py-0.2 text-[9px] font-medium text-ink/50 border border-stone-200/50">
-                      {item.count}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="tabular font-display font-semibold text-ink text-[11px] sm:text-xs">
-                      {formatMoney(item.monthlySpend, currency)}
-                    </span>
-                    <span className="tabular text-[10px] font-medium text-ink/40 w-7 text-right">
-                      {item.percentage}%
-                    </span>
-                  </div>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-stone-100">
-                  <div
-                    className="h-full transition-all duration-300 rounded-full"
-                    style={{
-                      width: `${item.percentage}%`,
-                      backgroundColor: item.color,
-                      opacity: isHovered ? 1 : 0.85,
-                    }}
-                  />
-                </div>
-
-                {/* Expanded Details when Hovered */}
-                {isHovered && item.topSubscriptions?.length > 0 && (
-                  <div className="mt-1.5 flex flex-wrap items-center gap-1 border-t border-line/40 pt-1.5 text-[9px] text-ink/60">
-                    <span>Top:</span>
-                    {item.topSubscriptions.map((s, idx) => (
-                      <span key={idx} className="rounded bg-paper px-1 py-0.5 font-medium text-ink/70">
-                        {s.name}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+        {/* Legend / Hover Hint */}
+        <div className="mt-2 text-center">
+          <span className="text-[11px] text-ink/40 italic">
+            {activeCategory ? `${activeCategory.count} active subscription${activeCategory.count > 1 ? 's' : ''}` : 'Hover or tap chart slice for details'}
+          </span>
         </div>
+      </div>
+
+      {/* Category List & Metrics */}
+      <div className="mt-4 border-t border-line/60 pt-3 space-y-2 max-h-56 overflow-y-auto pr-1">
+        {chartData.map((item, index) => {
+          const isHovered = activeIndex === index;
+          return (
+            <div
+              key={item.category}
+              onMouseEnter={() => setActiveIndex(index)}
+              onMouseLeave={() => setActiveIndex(null)}
+              className={`rounded-xs p-1.5 transition-colors cursor-pointer ${
+                isHovered ? 'bg-stone-50' : 'hover:bg-stone-50/60'
+              }`}
+            >
+              {/* Top Row: Color dot, Category Name, Sub Count, Monthly Spend */}
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className="inline-block h-2.5 w-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <span className="font-medium text-ink truncate capitalize">
+                    {formatCategoryLabel(item.category)}
+                  </span>
+                  <span className="text-[10px] text-ink/40 font-mono">
+                    ({item.count})
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 tabular font-mono">
+                  <span className="text-ink font-semibold">
+                    {formatMoney(item.monthlySpend, currency)}
+                    <span className="text-[10px] font-sans text-ink/40">/mo</span>
+                  </span>
+                  <span className="text-[10px] text-ink/40 w-10 text-right">
+                    {item.percentage}%
+                  </span>
+                </div>
+              </div>
+
+              {/* Progress Bar Showing Percentage Share */}
+              <div className="mt-1 h-1 w-full bg-stone-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{
+                    width: `${Math.min(100, Math.max(2, item.percentage))}%`,
+                    backgroundColor: item.color,
+                  }}
+                />
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
