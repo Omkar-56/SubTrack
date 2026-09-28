@@ -4,7 +4,6 @@ import { ApiError } from '../utils/ApiError.js';
 export const VALID_CATEGORIES = [
   'entertainment',
   'software / AI',
-  'AI',
   'gaming',
   'news and media',
   'education',
@@ -15,11 +14,6 @@ export const VALID_CATEGORIES = [
 export function normalizeCategory(val = '') {
   if (!val) return 'other';
   const v = String(val).toLowerCase().trim();
-
-  // AI-specific (ChatGPT, Claude, Midjourney, OpenAI, Gemini, Perplexity)
-  if (v === 'ai' || v === 'artificial intelligence' || v.includes('generative ai') || v.includes('llm')) {
-    return 'AI';
-  }
 
   // Gaming
   if (
@@ -33,12 +27,17 @@ export function normalizeCategory(val = '') {
     return 'gaming';
   }
 
-  // Software / AI or developer tooling
+  // Software / AI (including generative AI, LLMs, developer tooling, cloud)
   if (
+    v === 'ai' ||
+    v === 'artificial intelligence' ||
+    v.includes('generative ai') ||
+    v.includes('llm') ||
     v.includes('software') ||
     v.includes('cloud') ||
     v.includes('infra') ||
     v.includes('utility') ||
+    v.includes('utilities') ||
     v.includes('saas') ||
     v.includes('hosting') ||
     v.includes('dev')
@@ -115,21 +114,20 @@ Your task is to analyze the provided document, invoice, receipt image, screensho
 Current Date: ${todayStr}
 User Default Currency: ${defaultCurrency}
 
-ALLOWED CATEGORIES (You must ONLY classify each subscription into one of these exact 8 values):
+ALLOWED CATEGORIES (You must ONLY classify each subscription into one of these exact 7 values):
 1. "entertainment" (e.g. Netflix, Spotify, Disney+, YouTube Premium, Hulu, Apple TV, HBO)
-2. "software / AI" (e.g. GitHub, AWS, Google Workspace, Adobe, Notion, Figma, Slack, Dropbox, hosting)
-3. "AI" (e.g. ChatGPT Plus, Claude Pro, Midjourney, Perplexity, OpenAI, Cursor AI, Gemini Advanced)
-4. "gaming" (e.g. Xbox Game Pass, PlayStation Plus, Nintendo Switch Online, Discord Nitro, Steam)
-5. "news and media" (e.g. New York Times, Wall Street Journal, Substack, Medium, Bloomberg)
-6. "education" (e.g. Coursera, Udemy, Duolingo, MasterClass, Skillshare, Codecademy, edX)
-7. "health & fitness" (e.g. Gym memberships, Strava, Peloton, Whoop, Apple Fitness, Calm, Headspace)
-8. "other" (any subscription not fitting the above)
+2. "software / AI" (e.g. ChatGPT, Claude, Midjourney, OpenAI, Gemini, Perplexity, GitHub, AWS, Google Workspace, Adobe, Notion, Figma, Slack, Dropbox, hosting)
+3. "gaming" (e.g. Xbox Game Pass, PlayStation Plus, Nintendo Switch Online, Discord Nitro, Steam)
+4. "news and media" (e.g. New York Times, Wall Street Journal, Substack, Medium, Bloomberg)
+5. "education" (e.g. Coursera, Udemy, Duolingo, MasterClass, Skillshare, Codecademy, edX)
+6. "health & fitness" (e.g. Gym memberships, Strava, Peloton, Whoop, Apple Fitness, Calm, Headspace)
+7. "other" (any subscription not fitting the above)
 
 Instructions:
 1. Identify all recurring subscriptions/services mentioned in the text or document.
 2. For each detected subscription, extract or infer:
    - "name": Service/Company name (e.g. "Netflix", "ChatGPT Plus")
-   - "category": MUST be one of the 8 allowed values: "entertainment", "software / AI", "AI", "gaming", "news and media", "education", "health & fitness", "other".
+   - "category": MUST be one of the 7 allowed values: "entertainment", "software / AI", "gaming", "news and media", "education", "health & fitness", "other".
    - "amount": The recurring price as a positive number (float). If free trial, amount is 0 or trial charge.
    - "currency": ISO 3-letter currency (e.g. "USD", "EUR", "INR", "GBP"). Default to "${defaultCurrency}" if not explicitly stated.
    - "billingCycle": One of "weekly", "monthly", "quarterly", "yearly". Default to "monthly" if unknown.
@@ -148,7 +146,7 @@ Example output format:
   {
     "name": "Netflix",
     "category": "entertainment",
-    "amount": 15.99,
+    "amount": 15.49,
     "currency": "USD",
     "billingCycle": "monthly",
     "nextRenewalDate": "2026-10-25",
@@ -156,142 +154,133 @@ Example output format:
     "trialEndDate": null,
     "cancellationDeadline": null,
     "postTrialAmount": null,
-    "notes": "Standard plan parsed from receipt"
+    "notes": "Parsed from subscription receipt"
   }
 ]`;
 
-    const parts = [];
+    let userContentParts = [];
 
-    // If file uploaded (image / pdf)
     if (fileBase64 && mimeType) {
-      parts.push({
-        inline_data: {
-          mime_type: mimeType,
+      userContentParts.push({
+        inlineData: {
+          mimeType,
           data: fileBase64,
         },
       });
-    }
-
-    // If text or caption
-    if (text && text.trim()) {
-      parts.push({
-        text: `Here is the receipt text / document content:\n\n${text.trim()}`,
+      userContentParts.push({
+        text: `Please parse this receipt/document image or file into subscriptions JSON according to the instructions.${
+          text ? `\nAdditional user notes or context: ${text}` : ''
+        }`,
       });
-    } else if (!fileBase64) {
-      throw new ApiError(400, 'Please provide either document text or an uploaded file.');
+    } else if (text) {
+      userContentParts.push({
+        text: `Please parse the following receipt/invoice text snippet into subscriptions JSON:\n\n${text}`,
+      });
+    } else {
+      throw new ApiError(400, 'Please provide receipt text or upload a document/image file.');
     }
 
-    parts.push({
-      text: 'Please extract the subscriptions and return the JSON array now.',
-    });
+    const payload = {
+      contents: [
+        {
+          role: 'user',
+          parts: userContentParts,
+        },
+      ],
+      systemInstruction: {
+        parts: [{ text: systemPrompt }],
+      },
+      generationConfig: {
+        temperature: 0.1,
+        responseMimeType: 'application/json',
+      },
+    };
 
-    // High performance Gemini models ordered with priority to high availability & low latency
-    const models = [
-      'gemini-flash-lite-latest',
-      'gemini-3.5-flash',
-      'gemini-3.8-flash',
-      'gemini-flash-latest',
-      'gemini-pro-latest',
+    // Models with automatic fallback if primary model experiences spikes in demand
+    const modelsToTry = [
+      'gemini-2.5-flash',
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
     ];
 
     let lastError = null;
 
-    for (const model of models) {
+    for (const model of modelsToTry) {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
       try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-        const response = await fetch(url, {
+        const response = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            system_instruction: {
-              parts: [{ text: systemPrompt }],
-            },
-            contents: [
-              {
-                role: 'user',
-                parts,
-              },
-            ],
-            generationConfig: {
-              temperature: 0.1,
-              response_mime_type: 'application/json',
-            },
-          }),
+          body: JSON.stringify(payload),
         });
 
         if (!response.ok) {
-          const errData = await response.json().catch(() => ({}));
-          const errMsg = errData?.error?.message || `HTTP ${response.status} from Gemini API`;
-          console.warn(`[Gemini Receipt Parser] Model ${model} returned error: ${errMsg}. Trying next candidate model...`);
-          lastError = new Error(errMsg);
-          await new Promise((resolve) => setTimeout(resolve, 250));
-          continue;
+          const errBody = await response.text();
+          let parsedMsg = errBody;
+          try {
+            const jsonErr = JSON.parse(errBody);
+            parsedMsg = jsonErr.error?.message || errBody;
+          } catch (_) {}
+
+          // If high demand (503) or rate limit (429), try next model fallback
+          if (response.status === 503 || response.status === 429) {
+            lastError = new ApiError(response.status, `Gemini (${model}): ${parsedMsg}`);
+            continue;
+          }
+
+          throw new ApiError(response.status, `Gemini API error: ${parsedMsg}`);
         }
 
         const data = await response.json();
-        const candidate = data?.candidates?.[0];
-        const rawContent = candidate?.content?.parts?.[0]?.text;
+        const candidate = data.candidates?.[0];
+        const rawText = candidate?.content?.parts?.[0]?.text;
 
-        if (!rawContent) {
-          console.warn(`[Gemini Receipt Parser] Empty content from model ${model}. Trying next candidate model...`);
-          lastError = new Error(`Empty response received from ${model}`);
-          continue;
+        if (!rawText) {
+          return [];
         }
 
-        // Clean out possible markdown fences if returned
-        let cleaned = rawContent.trim();
-        if (cleaned.startsWith('```json')) cleaned = cleaned.slice(7);
-        if (cleaned.startsWith('```')) cleaned = cleaned.slice(3);
-        if (cleaned.endsWith('```')) cleaned = cleaned.slice(0, -3);
-        cleaned = cleaned.trim();
+        let cleaned = rawText.trim();
+        if (cleaned.startsWith('```')) {
+          cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
+        }
 
-        const parsed = JSON.parse(cleaned);
-        const subscriptions = Array.isArray(parsed) ? parsed : [parsed];
+        let parsedItems = JSON.parse(cleaned);
+        if (!Array.isArray(parsedItems)) {
+          if (typeof parsedItems === 'object' && parsedItems !== null) {
+            parsedItems = [parsedItems];
+          } else {
+            return [];
+          }
+        }
 
-        // Sanitize subscriptions and enforce strictly normalized categories
-        return subscriptions.map((item) => {
-          const category = normalizeCategory(item.category);
-
-          return {
-            name: String(item.name || 'Untitled Subscription').trim(),
-            category,
-            amount: Math.max(0, Number(item.amount) || 0),
-            currency: String(item.currency || defaultCurrency).toUpperCase(),
-            billingCycle: ['weekly', 'monthly', 'quarterly', 'yearly'].includes(
-              item.billingCycle?.toLowerCase()
-            )
-              ? item.billingCycle.toLowerCase()
-              : 'monthly',
-            nextRenewalDate: item.nextRenewalDate && /^\d{4}-\d{2}-\d{2}$/.test(item.nextRenewalDate)
-              ? item.nextRenewalDate
-              : todayStr,
-            status: 'active',
-            notes: item.notes ? String(item.notes) : 'Imported via Gemini Receipt Parser',
-            isFreeTrial: Boolean(item.isFreeTrial),
-            trialEndDate: item.trialEndDate && /^\d{4}-\d{2}-\d{2}$/.test(item.trialEndDate)
-              ? item.trialEndDate
-              : null,
-            cancellationDeadline:
-              item.cancellationDeadline && /^\d{4}-\d{2}-\d{2}$/.test(item.cancellationDeadline)
-                ? item.cancellationDeadline
-                : null,
-            postTrialAmount:
-              item.postTrialAmount !== null && item.postTrialAmount !== undefined
-                ? Math.max(0, Number(item.postTrialAmount))
-                : null,
-            postTrialCurrency: item.postTrialCurrency
-              ? String(item.postTrialCurrency).toUpperCase()
-              : String(item.currency || defaultCurrency).toUpperCase(),
-          };
-        });
+        return parsedItems.map((item) => ({
+          name: item.name ? String(item.name).trim() : 'Unnamed Subscription',
+          category: normalizeCategory(item.category),
+          amount: Math.max(0, Number(item.amount) || 0),
+          currency: (item.currency || defaultCurrency || 'USD').toUpperCase().slice(0, 3),
+          billingCycle: ['weekly', 'monthly', 'quarterly', 'yearly'].includes(item.billingCycle)
+            ? item.billingCycle
+            : 'monthly',
+          nextRenewalDate: item.nextRenewalDate ? String(item.nextRenewalDate).slice(0, 10) : todayStr,
+          isFreeTrial: Boolean(item.isFreeTrial),
+          trialEndDate: item.trialEndDate ? String(item.trialEndDate).slice(0, 10) : null,
+          cancellationDeadline: item.cancellationDeadline ? String(item.cancellationDeadline).slice(0, 10) : null,
+          postTrialAmount: item.postTrialAmount !== null && item.postTrialAmount !== undefined ? Number(item.postTrialAmount) : null,
+          notes: item.notes ? String(item.notes) : 'Imported via Gemini parser',
+        }));
       } catch (err) {
-        console.warn(`[Gemini Receipt Parser] Exception with model ${model}:`, err.message);
-        lastError = err;
-        await new Promise((resolve) => setTimeout(resolve, 250));
-        continue;
+        if (err instanceof ApiError && (err.statusCode === 503 || err.statusCode === 429)) {
+          lastError = err;
+          continue;
+        }
+        if (err instanceof SyntaxError) {
+          throw new ApiError(500, 'Gemini returned an invalid JSON response structure. Please try again.');
+        }
+        throw err;
       }
     }
 
-    throw new ApiError(502, `Failed to parse receipt with Gemini: ${lastError?.message || 'High demand across models. Please try again shortly.'}`);
+    throw lastError || new ApiError(503, 'Gemini is currently unavailable. Please try again in a few moments.');
   },
 };

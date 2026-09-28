@@ -77,11 +77,12 @@ export async function ensureSchema() {
 
           -- Category harmonization migrations
           UPDATE subscriptions SET category = 'entertainment' WHERE LOWER(category) IN ('streaming');
-          UPDATE subscriptions SET category = 'software / AI' WHERE LOWER(category) IN ('software', 'cloud', 'infrastructure', 'utilities');
+          UPDATE subscriptions SET category = 'software / AI' WHERE LOWER(category) IN ('ai', 'artificial intelligence', 'software', 'cloud', 'infrastructure', 'utilities');
           UPDATE subscriptions SET category = 'news and media' WHERE LOWER(category) IN ('news');
           UPDATE subscriptions SET category = 'health & fitness' WHERE LOWER(category) IN ('fitness', 'health');
 
-          CREATE TABLE IF NOT EXISTS price_history (\n            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          CREATE TABLE IF NOT EXISTS price_history (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
             subscription_id UUID NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
             old_amount NUMERIC(10, 2) NOT NULL,
             new_amount NUMERIC(10, 2) NOT NULL,
