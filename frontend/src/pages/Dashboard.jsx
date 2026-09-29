@@ -352,15 +352,6 @@ export default function Dashboard() {
         </section>
       </div>
 
-      {summary.recentPriceIncreases?.length > 0 && (
-        <section>
-          <h2 className="font-display text-lg font-semibold">Price alerts</h2>
-          <p className="mt-1 text-sm text-ink/60">
-            These went up in the last 30 days — worth a second look.
-          </p>
-        </section>
-      )}
-
       {payingSub && (
         <PaymentConfirmModal
           subscription={payingSub}
