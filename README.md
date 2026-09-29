@@ -29,6 +29,52 @@ Subscriptions are organized into 7 clear categories:
 
 ---
 
+## API Endpoints
+
+All protected endpoints require a JWT token passed in the `Authorization: Bearer <token>` header.
+
+### Authentication (`/api/auth`)
+| Method | Endpoint | Description | Auth Required |
+|---|---|---|---|
+| `POST` | `/api/auth/register` | Register a new user account | No |
+| `POST` | `/api/auth/login` | Log in with email and password | No |
+| `POST` | `/api/auth/google` | Sign in or sign up with Google OAuth token | No |
+| `GET` | `/api/auth/me` | Fetch authenticated user profile | Yes |
+| `PUT` | `/api/auth/currency` | Update user base currency (USD, EUR, INR, etc.) | Yes |
+
+### Subscriptions (`/api/subscriptions`)
+| Method | Endpoint | Description | Auth Required |
+|---|---|---|---|
+| `GET` | `/api/subscriptions` | List user subscriptions (supports `?status=` filter) | Yes |
+| `POST` | `/api/subscriptions` | Create a new subscription or trial | Yes |
+| `POST` | `/api/subscriptions/parse-receipt` | Parse receipt/invoice document (PDF, image, text) using Gemini AI | Yes |
+| `GET` | `/api/subscriptions/:id` | Get details for a specific subscription | Yes |
+| `PUT` | `/api/subscriptions/:id` | Update subscription details (automatically tracks price hikes) | Yes |
+| `DELETE` | `/api/subscriptions/:id` | Delete a subscription | Yes |
+| `POST` | `/api/subscriptions/:id/confirm-payment` | Record payment and roll over to the next billing cycle | Yes |
+| `POST` | `/api/subscriptions/:id/convert-trial` | Convert an active free trial into a standard subscription | Yes |
+| `GET` | `/api/subscriptions/:id/price-history` | View price changes log for price-hike alerts | Yes |
+| `GET` | `/api/subscriptions/:id/payments` | View logged payments for a specific subscription | Yes |
+| `GET` | `/api/subscriptions/payments/recent` | List all recent payments across subscriptions | Yes |
+
+### Dashboard & Analytics (`/api/dashboard`)
+| Method | Endpoint | Description | Auth Required |
+|---|---|---|---|
+| `GET` | `/api/dashboard/summary` | Spend summaries, category breakdown, trials, and renewals | Yes |
+| `GET` | `/api/dashboard/forecast` | 12-month future renewal schedule and spend projection | Yes |
+| `GET` | `/api/dashboard/trend` | 12-month historical monthly spend trend | Yes |
+
+### Reminders & Email (`/api/reminders`)
+| Method | Endpoint | Description | Auth Required |
+|---|---|---|---|
+| `GET` | `/api/reminders` | List pending and sent in-app/email reminders | Yes |
+| `POST` | `/api/reminders/send-due` | Trigger sending due email reminders for current user | Yes |
+| `POST` | `/api/reminders/test-email` | Send a test reminder email to verify SMTP setup | Yes |
+| `PATCH` | `/api/reminders/:id/dismiss` | Dismiss an active reminder | Yes |
+| `GET/POST` | `/api/reminders/cron` | Automated endpoint invoked by Vercel Cron to dispatch emails | CRON_SECRET |
+
+---
+
 ## Tech Stack
 
 - **Frontend**: React 18, Vite, Tailwind CSS, Recharts
