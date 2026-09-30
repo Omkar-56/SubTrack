@@ -14,6 +14,7 @@ const COLORS = {
 function ForecastTooltip({ active, payload, label, currency = 'USD' }) {
   if (!active || !payload?.length) return null;
   const point = payload[0].payload;
+  const charges = point.charges || point.renewals || [];
 
   return (
     <div className="max-w-xs border border-line bg-white px-3 py-2 shadow-sm rounded-sm">
@@ -24,18 +25,18 @@ function ForecastTooltip({ active, payload, label, currency = 'USD' }) {
       <p className="tabular text-xs" style={{ color: COLORS.cumulative }}>
         Cumulative: {formatMoney(point.cumulative, currency)}
       </p>
-      {point.charges.length > 0 && (
+      {charges.length > 0 && (
         <ul className="mt-2 space-y-1 border-t border-line pt-2">
-          {point.charges.map((c, i) => (
+          {charges.map((c, i) => (
             <li key={`${c.name}-${i}`} className="flex items-center justify-between gap-4 text-xs text-ink/70">
               <span className="truncate">{c.name}</span>
               <span className="tabular shrink-0 font-medium">
                 {c.nativeCurrency && c.nativeCurrency !== currency ? (
                   <span title={`Native: ${formatMoney(c.nativeAmount, c.nativeCurrency)}`}>
-                    {formatMoney(c.amount, currency)}
+                    {formatMoney(c.convertedAmount ?? c.amount, currency)}
                   </span>
                 ) : (
-                  formatMoney(c.amount, currency)
+                  formatMoney(c.convertedAmount ?? c.amount, currency)
                 )}
               </span>
             </li>
@@ -53,9 +54,11 @@ export default function ForecastChart({ months, currency = 'USD' }) {
     let running = 0;
     return (months || []).map((m) => {
       running += m.total;
+      const monthLabel = m.label || m.month || '';
       return {
         ...m,
-        shortLabel: m.label.split(' ')[0],
+        label: monthLabel,
+        shortLabel: monthLabel ? monthLabel.split(' ')[0] : '',
         cumulative: Number(running.toFixed(2)),
       };
     });

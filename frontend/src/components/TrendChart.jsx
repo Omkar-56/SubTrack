@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
@@ -5,38 +6,30 @@ import { formatMoney } from '../utils/date';
 
 const COLORS = {
   line: '#1F6F54',
-  grid: '#E2E8F0',
+  fill: '#EBF3F0',
+  grid: '#D9DEDA',
   axis: '#16231F',
   average: '#C77D2B',
 };
 
 function TrendTooltip({ active, payload, label, currency = 'USD' }) {
   if (!active || !payload?.length) return null;
-  const { total, delta, deltaPercent } = payload[0].payload;
+  const point = payload[0].payload;
 
   return (
-    <div className="rounded border border-line bg-white px-3.5 py-2.5 shadow-md">
-      <p className="font-display text-sm font-semibold text-ink">{label}</p>
-      <p className="tabular mt-1 font-display text-base font-bold" style={{ color: COLORS.line }}>
-        {formatMoney(total, currency)}
-        <span className="text-xs font-normal text-ink/50">/mo</span>
+    <div className="border border-line bg-white px-3 py-2 shadow-sm rounded-sm text-xs">
+      <p className="font-display font-semibold">{label}</p>
+      <p className="tabular mt-1 font-medium text-ink">
+        Spend: {formatMoney(point.total, currency)}
       </p>
-      {delta !== null && (
-        <div className="mt-1.5 flex items-center gap-1.5 border-t border-line/60 pt-1.5">
-          <span
-            className={`inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-medium ${
-              delta > 0
-                ? 'bg-rust-light text-rust border border-rust/30'
-                : delta < 0
-                ? 'bg-ledger-light text-ledger-dark border border-ledger/20'
-                : 'bg-stone-100 text-ink/50'
-            }`}
-          >
-            {delta > 0 ? `▲ +${formatMoney(delta, currency)}` : delta < 0 ? `▼ ${formatMoney(delta, currency)}` : 'No change'}
-            {deltaPercent !== null && ` (${delta > 0 ? '+' : ''}${deltaPercent}%)`}
+      {point.delta !== null && (
+        <p className="tabular text-ink/60 mt-0.5">
+          MoM change:{' '}
+          <span className={point.delta > 0 ? 'text-rust font-medium' : point.delta < 0 ? 'text-ledger font-medium' : 'text-ink/60'}>
+            {point.delta > 0 ? '+' : ''}{formatMoney(point.delta, currency)}
+            {point.deltaPercent !== null ? ` (${point.deltaPercent > 0 ? '+' : ''}${point.deltaPercent}%)` : ''}
           </span>
-          <span className="text-[11px] text-ink/40">vs prev month</span>
-        </div>
+        </p>
       )}
     </div>
   );
@@ -55,9 +48,11 @@ export default function TrendChart({
     const prev = i === 0 ? null : months[i - 1].total;
     const delta = prev !== null ? Number((m.total - prev).toFixed(2)) : null;
     const deltaPercent = prev !== null && prev > 0 ? Number(((delta / prev) * 100).toFixed(1)) : null;
+    const monthLabel = m.label || m.month || '';
     return {
       ...m,
-      shortLabel: m.label.split(' ')[0],
+      label: monthLabel,
+      shortLabel: monthLabel ? monthLabel.split(' ')[0] : '',
       delta,
       deltaPercent,
     };
@@ -73,108 +68,102 @@ export default function TrendChart({
 
   return (
     <div className="mt-3 border border-line bg-white p-4 shadow-2xs">
-      {/* Top Header: Metrics & Timeframe Switcher */}
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-line/60 pb-3.5">
-        {/* Metric Badges */}
-        <div className="flex flex-wrap items-center gap-3 text-xs">
-          {/* Net Growth */}
-          <div className="flex items-center gap-1.5 rounded-sm bg-paper px-2.5 py-1 border border-line/70">
-            <span className="text-ink/50">Change ({timeframe}M):</span>
-            <span
-              className={`tabular font-semibold ${
-                netDelta > 0 ? 'text-rust' : netDelta < 0 ? 'text-ledger-dark' : 'text-ink/60'
-              }`}
-            >
-              {netDelta > 0 ? '+' : ''}{formatMoney(netDelta, currency)}/mo
-              {netDeltaPercent !== 0 && ` (${netDelta > 0 ? '+' : ''}${netDeltaPercent}%)`}
-            </span>
-          </div>
-
-          {/* Average */}
-          <div className="flex items-center gap-1.5 rounded-sm bg-paper px-2.5 py-1 border border-line/70">
-            <span className="text-ink/50">Period Avg:</span>
-            <span className="tabular font-semibold text-ink">
-              {formatMoney(average, currency)}/mo
-            </span>
-          </div>
-
-          {/* Peak Month */}
-          {peakMonth && (
-            <div className="hidden sm:flex items-center gap-1.5 rounded-sm bg-paper px-2.5 py-1 border border-line/70">
-              <span className="text-ink/50">Peak:</span>
-              <span className="tabular font-medium text-ink">
-                {formatMoney(peakMonth.total, currency)} ({peakMonth.label})
-              </span>
-            </div>
-          )}
+      {/* KPI strip */}
+      <div className="flex flex-wrap items-baseline justify-between gap-4 border-b border-line pb-3">
+        <div>
+          <span className="text-xs text-ink/50">Average monthly</span>
+          <p className="tabular font-display text-lg font-semibold text-ink">
+            {formatMoney(average, currency)}
+          </p>
         </div>
 
-        {/* Timeframe selector pills */}
+        <div>
+          <span className="text-xs text-ink/50">Net change ({timeframe}m)</span>
+          <p className={`tabular font-display text-lg font-semibold ${netDelta > 0 ? 'text-rust' : netDelta < 0 ? 'text-ledger' : 'text-ink'}`}>
+            {netDelta > 0 ? '+' : ''}{formatMoney(netDelta, currency)}
+            <span className="text-xs font-normal text-ink/50 ml-1">
+              ({netDeltaPercent > 0 ? '+' : ''}{netDeltaPercent}%)
+            </span>
+          </p>
+        </div>
+
+        <div>
+          <span className="text-xs text-ink/50">Peak month</span>
+          <p className="tabular font-display text-lg font-semibold text-ink">
+            {formatMoney(peakMonth.total, currency)}
+            <span className="text-xs font-normal text-ink/50 ml-1">
+              ({peakMonth.label || peakMonth.month})
+            </span>
+          </p>
+        </div>
+
         {onTimeframeChange && (
-          <div className="inline-flex rounded-sm bg-paper p-0.5 text-xs font-medium border border-line">
-            {[
-              { id: 3, label: '3M' },
-              { id: 6, label: '6M' },
-              { id: 12, label: '12M' },
-            ].map((tf) => (
+          <div className="flex items-center gap-1 self-center text-xs">
+            <span className="text-ink/40 mr-1">Range:</span>
+            {[6, 12, 24].map((tf) => (
               <button
-                key={tf.id}
-                onClick={() => onTimeframeChange(tf.id)}
-                className={`rounded-xs px-2.5 py-1 transition-all ${
-                  timeframe === tf.id
-                    ? 'bg-white font-semibold text-ink shadow-2xs'
-                    : 'text-ink/60 hover:text-ink'
+                key={tf}
+                type="button"
+                onClick={() => onTimeframeChange(tf)}
+                className={`px-2 py-0.5 rounded-sm border ${
+                  timeframe === tf
+                    ? 'bg-paper font-semibold text-ledger border-ledger/40'
+                    : 'text-ink/60 border-line hover:bg-paper/40'
                 }`}
               >
-                {tf.label}
+                {tf}m
               </button>
             ))}
           </div>
         )}
       </div>
 
-      {/* Chart Canvas */}
-      <ResponsiveContainer width="100%" height={230}>
-        <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-          <defs>
-            <linearGradient id="spendGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={COLORS.line} stopOpacity={0.22} />
-              <stop offset="95%" stopColor={COLORS.line} stopOpacity={0.0} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid stroke={COLORS.grid} strokeDasharray="3 3" vertical={false} />
-          <XAxis
-            dataKey="shortLabel"
-            tick={{ fontSize: 11, fill: COLORS.axis, opacity: 0.55 }}
-            tickLine={false}
-            axisLine={{ stroke: COLORS.grid }}
-          />
-          <YAxis
-            tick={{ fontSize: 11, fill: COLORS.axis, opacity: 0.55 }}
-            tickLine={false}
-            axisLine={false}
-            width={64}
-            tickFormatter={(v) => formatMoney(v, currency).replace('.00', '')}
-          />
-          <Tooltip content={<TrendTooltip currency={currency} />} cursor={{ stroke: COLORS.grid }} />
-          <ReferenceLine
-            y={average}
-            stroke={COLORS.average}
-            strokeDasharray="4 4"
-            label={{ value: 'avg', position: 'insideTopRight', fontSize: 11, fill: COLORS.average }}
-          />
-          <Area
-            type="monotone"
-            dataKey="total"
-            stroke={COLORS.line}
-            strokeWidth={2.5}
-            fillOpacity={1}
-            fill="url(#spendGradient)"
-            dot={{ r: 3, fill: COLORS.line, strokeWidth: 1, stroke: '#ffffff' }}
-            activeDot={{ r: 5, fill: COLORS.line }}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+      <div className="mt-4">
+        <ResponsiveContainer width="100%" height={240}>
+          <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id="spendGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={COLORS.line} stopOpacity={0.25} />
+                <stop offset="95%" stopColor={COLORS.line} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid stroke={COLORS.grid} strokeDasharray="3 3" vertical={false} />
+            <XAxis
+              dataKey="shortLabel"
+              tick={{ fontSize: 12, fill: COLORS.axis, opacity: 0.5 }}
+              tickLine={false}
+              axisLine={{ stroke: COLORS.grid }}
+            />
+            <YAxis
+              tick={{ fontSize: 12, fill: COLORS.axis, opacity: 0.5 }}
+              tickLine={false}
+              axisLine={false}
+              width={64}
+              tickFormatter={(v) => formatMoney(v, currency).replace('.00', '')}
+            />
+            <Tooltip content={<TrendTooltip currency={currency} />} cursor={{ stroke: COLORS.grid }} />
+            <ReferenceLine
+              y={average}
+              stroke={COLORS.average}
+              strokeDasharray="4 4"
+              label={{
+                value: 'avg',
+                position: 'right',
+                fill: COLORS.average,
+                fontSize: 10,
+              }}
+            />
+            <Area
+              type="monotone"
+              dataKey="total"
+              name="Spend"
+              stroke={COLORS.line}
+              strokeWidth={2}
+              fill="url(#spendGradient)"
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }

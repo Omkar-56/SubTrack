@@ -17,11 +17,19 @@ export default function CategoryBreakdown({ categories = [], totalMonthly = 0, c
     );
   }
 
-  // Pre-process items with color
-  const chartData = categories.map((c) => ({
-    ...c,
-    color: getCategoryChartColor(c.category),
-  }));
+  // Pre-process items with color and ensure normalized spend & percentage
+  const chartData = categories.map((c) => {
+    const spend = Number(c.monthlySpend ?? c.amount ?? 0);
+    const percentage = c.percentage !== undefined && c.percentage !== null
+      ? Number(c.percentage)
+      : (totalMonthly > 0 ? Math.round((spend / totalMonthly) * 100) : 0);
+    return {
+      ...c,
+      monthlySpend: spend,
+      percentage,
+      color: getCategoryChartColor(c.category),
+    };
+  });
 
   const activeCategory = activeIndex !== null ? chartData[activeIndex] : null;
 
