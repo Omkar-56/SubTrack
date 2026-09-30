@@ -23,6 +23,7 @@ export const subscriptionModel = {
     const postTrialAmount = isFreeTrial && data.postTrialAmount !== undefined && data.postTrialAmount !== null ? Number(data.postTrialAmount) : null;
     const postTrialCurrency = isFreeTrial && data.postTrialCurrency ? data.postTrialCurrency : data.currency;
     const category = normalizeCategory(data.category);
+    const status = data.status || 'active';
 
     const { rows } = await query(
       `INSERT INTO subscriptions
@@ -38,7 +39,7 @@ export const subscriptionModel = {
         data.currency,
         data.billingCycle,
         data.nextRenewalDate,
-        data.status,
+        status,
         data.notes ?? null,
         data.reminderDaysBefore ?? 3,
         isFreeTrial,
@@ -74,6 +75,7 @@ export const subscriptionModel = {
     const postTrialAmount = isFreeTrial && data.postTrialAmount !== undefined && data.postTrialAmount !== null ? Number(data.postTrialAmount) : null;
     const postTrialCurrency = isFreeTrial && data.postTrialCurrency ? data.postTrialCurrency : data.currency;
     const category = normalizeCategory(data.category);
+    const status = data.status || 'active';
 
     const { rows } = await query(
       `UPDATE subscriptions SET
@@ -94,7 +96,7 @@ export const subscriptionModel = {
         data.currency,
         data.billingCycle,
         data.nextRenewalDate,
-        data.status,
+        status,
         data.notes ?? null,
         data.reminderDaysBefore ?? null,
         isFreeTrial,
@@ -175,5 +177,9 @@ export const subscriptionModel = {
       [id, userId]
     );
     return rowCount > 0;
+  },
+
+  async remove(userId, id) {
+    return this.delete(userId, id);
   },
 };
