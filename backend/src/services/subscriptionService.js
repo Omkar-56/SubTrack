@@ -243,9 +243,10 @@ export const subscriptionService = {
       totalMonthly += normalizedMonthly;
 
       if (!byCategory[s.category]) {
-        byCategory[s.category] = { category: s.category, amount: 0, count: 0 };
+        byCategory[s.category] = { category: s.category, amount: 0, monthlySpend: 0, count: 0 };
       }
       byCategory[s.category].amount += converted;
+      byCategory[s.category].monthlySpend += normalizedMonthly;
       byCategory[s.category].count += 1;
     }
 
@@ -317,7 +318,15 @@ export const subscriptionService = {
       activeCount: active.length,
       trialsCount: activeTrials.length,
       upcomingRenewals,
-      categoryBreakdown: Object.values(byCategory),
+      categoryBreakdown: Object.values(byCategory).map((cat) => {
+        const spend = Number(cat.monthlySpend ?? cat.amount ?? 0);
+        const percentage = totalMonthly > 0 ? Math.round((spend / totalMonthly) * 100) : 0;
+        return {
+          ...cat,
+          monthlySpend: spend,
+          percentage,
+        };
+      }),
       recentPriceIncreases,
       activeTrials,
       pendingReminders,
