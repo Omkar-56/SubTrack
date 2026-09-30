@@ -10,7 +10,10 @@ export const subscriptionController = {
   }),
 
   create: asyncHandler(async (req, res) => {
-    const subscription = await subscriptionService.create(req.user.id, req.body);
+    const subscription = await subscriptionService.create(req.user.id, {
+      ...req.body,
+      status: req.body.status || 'active',
+    });
     res.status(201).json({ subscription });
   }),
 
@@ -29,7 +32,10 @@ export const subscriptionController = {
     // 2. Automatically create each subscription in the user's account
     const createdSubscriptions = [];
     for (const item of extracted) {
-      const created = await subscriptionService.create(req.user.id, item);
+      const created = await subscriptionService.create(req.user.id, {
+        ...item,
+        status: item.status || 'active',
+      });
       createdSubscriptions.push(created);
     }
 
@@ -51,7 +57,11 @@ export const subscriptionController = {
   }),
 
   convertTrial: asyncHandler(async (req, res) => {
-    const subscription = await subscriptionService.convertTrial(req.user.id, req.params.id, req.body?.nextRenewalDate);
+    const subscription = await subscriptionService.convertTrial(
+      req.user.id,
+      req.params.id,
+      req.body.customRenewalDate
+    );
     res.json({ subscription });
   }),
 
@@ -61,8 +71,12 @@ export const subscriptionController = {
   }),
 
   confirmPayment: asyncHandler(async (req, res) => {
-    const result = await subscriptionService.confirmPayment(req.user.id, req.params.id, req.body);
-    res.json(result);
+    const result = await subscriptionService.confirmPayment(
+      req.user.id,
+      req.params.id,
+      req.body
+    );
+    res.json({ success: true, ...result });
   }),
 
   payments: asyncHandler(async (req, res) => {
@@ -82,7 +96,7 @@ export const subscriptionController = {
   }),
 
   reminders: asyncHandler(async (req, res) => {
-    const reminders = await reminderService.getUpcomingReminders(req.user.id);
+    const reminders = await reminderService.getPendingReminders(req.user.id);
     res.json({ reminders });
   }),
 
