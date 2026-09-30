@@ -97,6 +97,17 @@ export function normalizeCategory(val = '') {
 }
 
 export const geminiService = {
+  /**
+   * Parse an uploaded receipt or invoice (images, PDFs, text snippets)
+   * and extract structured subscription candidates using Gemini multimodal API.
+   *
+   * @param {Object} input
+   * @param {string} [input.text] - Raw text extracted or pasted by the user
+   * @param {string} [input.fileBase64] - Base64 encoded file payload
+   * @param {string} [input.mimeType] - MIME type of the file (e.g., application/pdf, image/png)
+   * @param {string} [input.defaultCurrency='USD'] - Fallback currency if not detected
+   * @returns {Promise<Array<Object>>} - Extracted subscription candidates
+   */
   async parseReceiptOrDoc({ text, fileBase64, mimeType, defaultCurrency = 'USD' }) {
     const apiKey = env.geminiApiKey;
     if (!apiKey) {
@@ -158,8 +169,9 @@ Example output format:
   }
 ]`;
 
-    let userContentParts = [];
+    const userContentParts = [];
 
+    // Add multimodal file part if provided
     if (fileBase64 && mimeType) {
       userContentParts.push({
         inlineData: {
@@ -196,11 +208,12 @@ Example output format:
       },
     };
 
-    // Models with automatic fallback if primary model experiences spikes in demand
+    // Models with automatic fallback if primary model experiences spikes in demand or is retired
     const modelsToTry = [
-      'gemini-2.5-flash',
-      'gemini-2.0-flash',
-      'gemini-1.5-flash',
+      'gemini-3.8-flash',
+      'gemini-flash-latest',
+      'gemini-3.5-flash',
+      'gemini-3.1-flash-lite',
     ];
 
     let lastError = null;
@@ -223,8 +236,8 @@ Example output format:
             parsedMsg = jsonErr.error?.message || errBody;
           } catch (_) {}
 
-          // If high demand (503) or rate limit (429), try next model fallback
-          if (response.status === 503 || response.status === 429) {
+          // If high demand (503), rate limit (429), or retired/not found (404), try next model fallback
+          if (response.status === 503 || response.status === 429 || response.status === 404) {
             lastError = new ApiError(response.status, `Gemini (${model}): ${parsedMsg}`);
             continue;
           }
@@ -263,6 +276,7 @@ Example output format:
             ? item.billingCycle
             : 'monthly',
           nextRenewalDate: item.nextRenewalDate ? String(item.nextRenewalDate).slice(0, 10) : todayStr,
+          status: 'active',
           isFreeTrial: Boolean(item.isFreeTrial),
           trialEndDate: item.trialEndDate ? String(item.trialEndDate).slice(0, 10) : null,
           cancellationDeadline: item.cancellationDeadline ? String(item.cancellationDeadline).slice(0, 10) : null,
@@ -270,7 +284,7 @@ Example output format:
           notes: item.notes ? String(item.notes) : 'Imported via Gemini parser',
         }));
       } catch (err) {
-        if (err instanceof ApiError && (err.statusCode === 503 || err.statusCode === 429)) {
+        if (err instanceof ApiError && (err.statusCode === 503 || err.statusCode === 429 || err.statusCode === 404)) {
           lastError = err;
           continue;
         }
