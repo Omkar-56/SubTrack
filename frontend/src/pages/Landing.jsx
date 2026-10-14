@@ -66,7 +66,7 @@ export default function Landing() {
               <div className="pt-1 flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 <Link
                   to="/register"
-                  className="inline-flex items-center justify-center gap-2 rounded-md bg-ledger px-6 py-3.5 text-sm font-semibold text-white shadow-md hover:bg-ledger-dark transition-all transform hover:-translate-y-0.5 cursor-pointer"
+                  className="inline-flex items-center justify-center gap-2 rounded-sm bg-ledger px-6 py-3.5 text-sm font-semibold text-white shadow-md hover:bg-ledger-dark transition-all transform hover:-translate-y-0.5 cursor-pointer"
                 >
                   <span>Get Started Free</span>
                   <span>→</span>
@@ -151,7 +151,7 @@ export default function Landing() {
             {FEATURES.map((f, idx) => (
               <div
                 key={idx}
-                className="rounded-md border border-line bg-white p-6 shadow-2xs hover:shadow-xs transition-shadow flex flex-col justify-between"
+                className="rounded-sm border border-line bg-white p-6 shadow-2xs hover:shadow-xs transition-shadow flex flex-col justify-between"
               >
                 <div>
                   <div className="flex h-10 w-10 items-center justify-center rounded-sm bg-ledger-light text-xl">
@@ -166,7 +166,7 @@ export default function Landing() {
         </section>
 
         {/* Call to Action Footer Card */}
-        <section className="rounded-lg border border-line bg-ink text-white p-8 sm:p-12 text-center shadow-lg relative overflow-hidden">
+        <section className="rounded-sm border border-line bg-ink text-white p-8 sm:p-12 text-center shadow-lg relative overflow-hidden">
           <div className="relative z-10 max-w-2xl mx-auto space-y-4">
             <h2 className="font-display text-3xl sm:text-4xl font-bold text-white">
               Ready to stop recurring subscription leaks?

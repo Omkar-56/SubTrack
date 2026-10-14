@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Subscriptions from './pages/Subscriptions';
+import PricingPlans from './components/PricingPlans';
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -34,6 +35,16 @@ export default function App() {
                 <Landing />
               </main>
             )
+          }
+        />
+
+        {/* Pricing Plans Preview Route */}
+        <Route
+          path="/pricing"
+          element={
+            <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+              <PricingPlans />
+            </main>
           }
         />
 
