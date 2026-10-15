@@ -182,4 +182,12 @@ export const subscriptionModel = {
   async remove(userId, id) {
     return this.delete(userId, id);
   },
+
+  async countActiveForUser(userId) {
+    const { rows } = await query(
+      `SELECT COUNT(*)::int AS count FROM subscriptions WHERE user_id = $1 AND status = 'active'`,
+      [userId]
+    );
+    return rows[0]?.count || 0;
+  },
 };

@@ -10,6 +10,17 @@ CREATE TABLE IF NOT EXISTS users (
   avatar_url TEXT,
   base_currency TEXT NOT NULL DEFAULT 'USD',
   reminder_days_before INT NOT NULL DEFAULT 3,
+  plan TEXT NOT NULL DEFAULT 'starter',
+  plan_status TEXT NOT NULL DEFAULT 'active',
+  billing_cycle TEXT,
+  current_period_start TIMESTAMPTZ,
+  current_period_end TIMESTAMPTZ,
+  trial_ends_at TIMESTAMPTZ,
+  cancel_at_period_end BOOLEAN NOT NULL DEFAULT FALSE,
+  customer_id TEXT,
+  subscription_external_id TEXT,
+  ai_scans_used INT NOT NULL DEFAULT 0,
+  ai_scans_reset_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -19,6 +30,17 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS reminder_days_before INT NOT NULL DEF
 ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS plan TEXT NOT NULL DEFAULT 'starter';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_status TEXT NOT NULL DEFAULT 'active';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS billing_cycle TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS current_period_start TIMESTAMPTZ;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS current_period_end TIMESTAMPTZ;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMPTZ;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS cancel_at_period_end BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS customer_id TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_external_id TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_scans_used INT NOT NULL DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_scans_reset_at TIMESTAMPTZ NOT NULL DEFAULT now();
 
 DO $$ BEGIN
   CREATE TYPE billing_cycle AS ENUM ('weekly', 'monthly', 'quarterly', 'yearly');
@@ -107,3 +129,28 @@ CREATE TABLE IF NOT EXISTS reminders (
 
 CREATE INDEX IF NOT EXISTS idx_reminders_user_status ON reminders(user_id, status);
 CREATE INDEX IF NOT EXISTS idx_reminders_due ON reminders(due_date);
+
+-- SubTrack User Plan Subscriptions & Billing Ledger
+CREATE TABLE IF NOT EXISTS user_plan_subscriptions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  plan TEXT NOT NULL DEFAULT 'starter', -- 'starter', 'pro', 'lifetime'
+  billing_cycle TEXT, -- 'monthly', 'yearly', 'lifetime'
+  status TEXT NOT NULL DEFAULT 'active', -- 'active', 'trialing', 'past_due', 'cancelled', 'expired'
+  amount NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  currency TEXT NOT NULL DEFAULT 'USD',
+  payment_provider TEXT DEFAULT 'manual', -- 'stripe', 'razorpay', 'lemonsqueezy', 'manual'
+  provider_customer_id TEXT,
+  provider_subscription_id TEXT,
+  provider_payment_id TEXT,
+  current_period_start TIMESTAMPTZ NOT NULL DEFAULT now(),
+  current_period_end TIMESTAMPTZ,
+  trial_ends_at TIMESTAMPTZ,
+  cancel_at_period_end BOOLEAN NOT NULL DEFAULT FALSE,
+  cancelled_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_plan_subs_user ON user_plan_subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_plan_subs_status ON user_plan_subscriptions(status);

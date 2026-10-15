@@ -5,6 +5,7 @@ import authRoutes from './routes/authRoutes.js';
 import subscriptionRoutes from './routes/subscriptionRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import reminderRoutes from './routes/reminderRoutes.js';
+import planRoutes from './routes/planRoutes.js';
 import { notFoundHandler, errorHandler } from './middleware/errorHandler.js';
 
 export function createApp() {
@@ -36,6 +37,7 @@ export function createApp() {
   app.use('/api/subscriptions', subscriptionRoutes);
   app.use('/api/dashboard', dashboardRoutes);
   app.use('/api/reminders', reminderRoutes);
+  app.use('/api/plans', planRoutes);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

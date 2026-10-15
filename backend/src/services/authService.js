@@ -12,6 +12,25 @@ function signToken(user) {
   });
 }
 
+function formatSafeUser(user) {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    googleId: user.googleId,
+    avatarUrl: user.avatarUrl,
+    baseCurrency: user.baseCurrency || 'USD',
+    plan: user.plan || 'starter',
+    planStatus: user.planStatus || 'active',
+    billingCycle: user.billingCycle || null,
+    currentPeriodEnd: user.currentPeriodEnd || null,
+    trialEndsAt: user.trialEndsAt || null,
+    cancelAtPeriodEnd: Boolean(user.cancelAtPeriodEnd),
+    aiScansUsed: user.aiScansUsed || 0,
+    aiScansResetAt: user.aiScansResetAt || null,
+  };
+}
+
 export const authService = {
   async register({ name, email, password, baseCurrency = 'USD' }) {
     const existing = await userModel.findByEmail(email);
@@ -20,7 +39,8 @@ export const authService = {
     }
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
     const user = await userModel.create({ name, email, passwordHash, baseCurrency });
-    return { user, token: signToken(user) };
+    const safeUser = formatSafeUser(user);
+    return { user: safeUser, token: signToken(safeUser) };
   },
 
   async login({ email, password }) {
@@ -35,14 +55,7 @@ export const authService = {
     if (!valid) {
       throw new ApiError(401, 'Invalid email or password');
     }
-    const safeUser = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      googleId: user.googleId,
-      avatarUrl: user.avatarUrl,
-      baseCurrency: user.baseCurrency || 'USD',
-    };
+    const safeUser = formatSafeUser(user);
     return { user: safeUser, token: signToken(safeUser) };
   },
 
@@ -95,27 +108,19 @@ export const authService = {
       }
     }
 
-    const safeUser = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      googleId: user.googleId,
-      avatarUrl: user.avatarUrl,
-      baseCurrency: user.baseCurrency || 'USD',
-    };
-
+    const safeUser = formatSafeUser(user);
     return { user: safeUser, token: signToken(safeUser) };
   },
 
   async me(userId) {
     const user = await userModel.findById(userId);
     if (!user) throw new ApiError(404, 'User not found');
-    return user;
+    return formatSafeUser(user);
   },
 
   async updateCurrency(userId, currency) {
     const validCurrency = (currency || 'USD').toUpperCase();
     const updated = await userModel.updateBaseCurrency(userId, validCurrency);
-    return updated;
+    return formatSafeUser(updated);
   },
 };
