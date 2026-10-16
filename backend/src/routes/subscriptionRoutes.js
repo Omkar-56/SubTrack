@@ -3,6 +3,7 @@ import { subscriptionController } from '../controllers/subscriptionController.js
 import { requireAuth } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { subscriptionSchema } from '../validators/subscriptionValidators.js';
+import { checkSubscriptionLimit, checkAiScanLimit } from '../middleware/planLimits.js';
 
 const router = Router();
 
@@ -10,8 +11,8 @@ router.use(requireAuth);
 
 // Collection routes
 router.get('/', subscriptionController.list);
-router.post('/', validate(subscriptionSchema), subscriptionController.create);
-router.post('/parse-receipt', subscriptionController.parseReceipt);
+router.post('/', checkSubscriptionLimit, validate(subscriptionSchema), subscriptionController.create);
+router.post('/parse-receipt', checkAiScanLimit, subscriptionController.parseReceipt);
 router.get('/reminders', subscriptionController.reminders);
 router.post('/reminders/:id/dismiss', subscriptionController.dismissReminder);
 router.get('/payments/recent', subscriptionController.allPayments);

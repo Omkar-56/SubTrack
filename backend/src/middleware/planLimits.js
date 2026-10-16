@@ -10,7 +10,12 @@ export async function checkSubscriptionLimit(req, res, next) {
       return next(
         new ApiError(
           403,
-          `You have reached the limit of ${details.usage.activeSubscriptions.limit} active subscriptions on the ${details.planName} plan. Please upgrade to Pro for unlimited tracking.`
+          `You have reached the limit of ${details.usage.activeSubscriptions.limit} active subscriptions on the ${details.planName} plan. Upgrade to Pro for unlimited tracking.`,
+          {
+            code: 'SUBSCRIPTION_LIMIT_REACHED',
+            limit: details.usage.activeSubscriptions.limit,
+            current: details.usage.activeSubscriptions.current,
+          }
         )
       );
     }
@@ -31,7 +36,13 @@ export async function checkAiScanLimit(req, res, next) {
       return next(
         new ApiError(
           403,
-          `You have used your ${planConfig.limits.monthlyAiScans} free AI scans for this month. Upgrade to Pro for unlimited receipt parsing.`
+          `You have used your ${planConfig.limits.monthlyAiScans} free AI scans for this month. Upgrade to Pro for unlimited receipt parsing.`,
+          {
+            code: 'AI_SCAN_LIMIT_REACHED',
+            limit: planConfig.limits.monthlyAiScans,
+            used: quota.aiScansUsed,
+            resetsAt: quota.aiScansResetAt,
+          }
         )
       );
     }
@@ -50,7 +61,8 @@ export function requireProFeature(featureName) {
         return next(
           new ApiError(
             403,
-            `This feature (${featureName}) is available exclusively on the SubTrack Pro plan.`
+            `This feature (${featureName}) is available exclusively on the SubTrack Pro plan.`,
+            { code: 'PRO_FEATURE_REQUIRED', feature: featureName }
           )
         );
       }

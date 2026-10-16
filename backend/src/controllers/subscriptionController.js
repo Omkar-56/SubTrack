@@ -1,6 +1,7 @@
 import { subscriptionService } from '../services/subscriptionService.js';
 import { reminderService } from '../services/reminderService.js';
 import { geminiService } from '../services/geminiService.js';
+import { userModel } from '../models/userModel.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 export const subscriptionController = {
@@ -39,10 +40,14 @@ export const subscriptionController = {
       createdSubscriptions.push(created);
     }
 
+    // 3. Increment AI scan count for the user
+    const aiScansUsed = await userModel.incrementAiScan(req.user.id);
+
     res.json({
       success: true,
       extractedCount: extracted.length,
       subscriptions: createdSubscriptions,
+      aiScansUsed,
     });
   }),
 
