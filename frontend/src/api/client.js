@@ -59,4 +59,11 @@ export const api = {
     request(`/dashboard/forecast?months=${months}${currency ? `&currency=${currency}` : ''}`),
   dashboardTrend: (months = 12, currency = '') =>
     request(`/dashboard/trend?months=${months}${currency ? `&currency=${currency}` : ''}`),
+
+  // Plans & Billing
+  getPlanCatalog: () => request('/plans/catalog', { auth: false }),
+  getMyPlan: () => request('/plans/me'),
+  subscribePlan: (payload) => request('/plans/subscribe', { method: 'POST', body: payload }),
+  cancelPlan: (payload = {}) => request('/plans/cancel', { method: 'POST', body: payload }),
+  getInvoices: () => request('/plans/invoices'),
 };

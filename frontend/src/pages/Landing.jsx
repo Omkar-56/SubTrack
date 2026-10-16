@@ -62,7 +62,7 @@ export default function Landing() {
                 get alerted before trial expiry & due dates, and cancel unwanted bills with 1-click direct guides.
               </p>
 
-              {/* CTA Button */}
+              {/* CTA Buttons */}
               <div className="pt-1 flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 <Link
                   to="/register"
@@ -70,6 +70,12 @@ export default function Landing() {
                 >
                   <span>Get Started Free</span>
                   <span>→</span>
+                </Link>
+                <Link
+                  to="/pricing"
+                  className="inline-flex items-center justify-center gap-2 rounded-sm border border-line bg-white px-5 py-3.5 text-sm font-semibold text-ink shadow-2xs hover:bg-stone-50 transition-all cursor-pointer"
+                >
+                  <span>View Plans</span>
                 </Link>
               </div>
 
@@ -181,13 +187,26 @@ export default function Landing() {
               >
                 Get Started for Free →
               </Link>
+              <Link
+                to="/pricing"
+                className="rounded-sm border border-white/20 bg-white/10 px-6 py-3 text-sm font-semibold text-white hover:bg-white/20 transition-all"
+              >
+                Explore Plans
+              </Link>
             </div>
           </div>
         </section>
 
         {/* Minimal Footer */}
-        <footer className="border-t border-line pt-8 pb-4 text-center text-xs text-ink/40">
-          <div className="flex items-center justify-center gap-2 mb-2">
+        <footer className="border-t border-line pt-8 pb-4 text-center text-xs text-ink/40 space-y-3">
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-ink/60 font-medium">
+            <Link to="/pricing" className="hover:text-ink transition-colors">Pricing & Plans</Link>
+            <span>·</span>
+            <Link to="/login" className="hover:text-ink transition-colors">Sign In</Link>
+            <span>·</span>
+            <Link to="/register" className="hover:text-ink transition-colors">Create Account</Link>
+          </div>
+          <div className="flex items-center justify-center gap-2">
             <span className="inline-block w-2 h-2 rounded-full bg-ledger"></span>
             <span className="font-display font-semibold text-ink/70">SubTrack</span>
             <span>· Subscription Intelligence & Ledger</span>

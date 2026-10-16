@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import SubscriptionCard from '../components/SubscriptionCard';
@@ -24,7 +25,7 @@ function monthlyEquivalent(sub) {
 }
 
 export default function Subscriptions() {
-  const { user } = useAuth();
+  const { user, isPro } = useAuth();
   const [subscriptions, setSubscriptions] = useState([]);
   const [priceIncreases, setPriceIncreases] = useState([]);
   const [error, setError] = useState('');
@@ -156,6 +157,9 @@ export default function Subscriptions() {
     };
   }, [subscriptions]);
 
+  const activeTotalCount = counts.active + counts.trials;
+  const isStarterLimitReached = !isPro && activeTotalCount >= 5;
+
   // Filtered and sorted subscriptions
   const filteredSubscriptions = useMemo(() => {
     return subscriptions
@@ -209,15 +213,12 @@ export default function Subscriptions() {
         if (sortBy === 'name_desc') {
           return b.name.localeCompare(a.name);
         }
-        if (sortBy === 'created_desc') {
-          return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
-        }
         return 0;
       });
   }, [subscriptions, statusFilter, categoryFilter, cycleFilter, searchTerm, sortBy]);
 
-  // Calculate monthly total of currently filtered active subscriptions
-  const filteredMonthlySpend = useMemo(() => {
+  // Aggregate stats for current filtered view
+  const filteredMonthlyTotal = useMemo(() => {
     return filteredSubscriptions
       .filter((s) => s.status === 'active')
       .reduce((sum, s) => sum + monthlyEquivalent(s), 0);
@@ -249,6 +250,24 @@ export default function Subscriptions() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
+          {/* Plan Status Pill */}
+          {!isPro ? (
+            <div className="flex items-center gap-2 rounded-full border border-line bg-white px-3.5 py-1.5 text-xs text-ink/75 shadow-2xs">
+              <span>
+                <strong className="text-ink font-semibold">{activeTotalCount}</strong>/5 active
+              </span>
+              <span className="text-line">|</span>
+              <Link to="/pricing" className="font-semibold text-ledger hover:text-ledger-dark underline">
+                Upgrade
+              </Link>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 rounded-full border border-ledger/20 bg-ledger-light px-3.5 py-1.5 text-xs text-ledger-dark font-semibold shadow-2xs">
+              <span className="h-1.5 w-1.5 rounded-full bg-ledger"></span>
+              <span>{user?.plan === 'lifetime' ? 'Founder' : 'Pro'} · Unlimited</span>
+            </div>
+          )}
+
           <button
             onClick={() => setShowReceiptParser(true)}
             className="flex items-center gap-2 rounded-sm border border-line bg-white px-3.5 py-2 text-sm font-medium text-ink shadow-2xs hover:bg-stone-50 transition-colors cursor-pointer"
@@ -268,6 +287,34 @@ export default function Subscriptions() {
           </button>
         </div>
       </div>
+
+      {/* Starter Plan Limit Exceeded Alert */}
+      {isStarterLimitReached && (
+        <div className="rounded-md border border-amber/40 bg-amber-light/30 p-4 shadow-2xs">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber text-white text-sm">
+                ✨
+              </span>
+              <div>
+                <h3 className="font-display text-sm font-bold text-ink">
+                  Starter Plan Limit Reached (5/5 Subscriptions Active)
+                </h3>
+                <p className="text-xs text-ink/75">
+                  You are currently tracking the maximum 5 subscriptions on the free Starter plan. Upgrade to SubTrack Pro for unlimited subscriptions and automated sentinels.
+                </p>
+              </div>
+            </div>
+
+            <Link
+              to="/pricing"
+              className="rounded bg-ledger px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-ledger-dark transition-colors"
+            >
+              Unlock Unlimited with Pro →
+            </Link>
+          </div>
+        </div>
+      )}
 
       {error && <p className="text-sm text-rust">{error}</p>}
 
@@ -359,22 +406,17 @@ export default function Subscriptions() {
               className="w-full rounded-sm border border-line bg-paper/40 px-3 py-1.5 pl-8 text-xs text-ink outline-none transition-all placeholder:text-ink/40 focus:border-ledger focus:bg-white focus:ring-1 focus:ring-ledger"
             />
             <svg
-              className="absolute left-2.5 top-2 h-3.5 w-3.5 text-ink/40"
+              className="pointer-events-none absolute left-2.5 top-2.5 h-3.5 w-3.5 text-ink/40"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="absolute right-2.5 top-1.5 text-xs text-ink/40 hover:text-ink cursor-pointer"
+                className="absolute right-2 top-2 text-ink/40 hover:text-ink text-xs font-bold"
               >
                 ✕
               </button>
@@ -382,73 +424,76 @@ export default function Subscriptions() {
           </div>
         </div>
 
-        {/* Bottom Row: Category, Cycle, Sort & Reset */}
+        {/* Bottom Row: Category, Billing Cycle & Sorting Selectors */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-line/60 text-xs">
           <div className="flex flex-wrap items-center gap-2">
-            {/* Category Filter */}
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="rounded-sm border border-line bg-paper/30 px-2.5 py-1 text-ink outline-none hover:border-line focus:border-ledger cursor-pointer"
-            >
-              <option value="all">All Categories</option>
-              {availableCategories.map((c) => (
-                <option key={c} value={c}>
-                  {formatCategoryLabel(c)}
-                </option>
-              ))}
-            </select>
-
-            {/* Cycle Filter */}
-            <select
-              value={cycleFilter}
-              onChange={(e) => setCycleFilter(e.target.value)}
-              className="rounded-sm border border-line bg-paper/30 px-2.5 py-1 text-ink outline-none hover:border-line focus:border-ledger cursor-pointer"
-            >
-              <option value="all">All Cycles</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="quarterly">Quarterly</option>
-              <option value="yearly">Yearly</option>
-            </select>
-
-            {/* Sort Dropdown */}
-            <div className="flex items-center gap-1.5 text-ink/60">
-              <span className="hidden sm:inline">Sort:</span>
+            {/* Category Dropdown */}
+            <div className="flex items-center gap-1 text-ink/60">
+              <span>Category:</span>
               <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="rounded-sm border border-line bg-paper/30 px-2.5 py-1 text-ink outline-none hover:border-line focus:border-ledger cursor-pointer"
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="rounded border border-line bg-white px-2 py-1 font-medium text-ink outline-none hover:border-line focus:border-ledger cursor-pointer"
               >
-                <option value="renewal_asc">Next renewal / deadline (soonest)</option>
-                <option value="renewal_desc">Next renewal / deadline (furthest)</option>
-                <option value="cost_desc">Cost (highest/mo)</option>
-                <option value="cost_asc">Cost (lowest/mo)</option>
-                <option value="name_asc">Name (A → Z)</option>
-                <option value="name_desc">Name (Z → A)</option>
+                <option value="all">All Categories</option>
+                {availableCategories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {formatCategoryLabel(cat)}
+                  </option>
+                ))}
               </select>
             </div>
-          </div>
 
-          {/* Quick Summary and Reset Button */}
-          <div className="flex items-center gap-3">
-            <span className="text-ink/60">
-              Showing <strong className="text-ink">{filteredSubscriptions.length}</strong> of{' '}
-              {subscriptions.length} (
-              <span className="tabular font-medium text-ledger-dark">
-                {formatMoney(filteredMonthlySpend, baseCurrency)}/mo
-              </span>
-              )
-            </span>
+            {/* Billing Cycle Dropdown */}
+            <div className="flex items-center gap-1 text-ink/60">
+              <span>Cycle:</span>
+              <select
+                value={cycleFilter}
+                onChange={(e) => setCycleFilter(e.target.value)}
+                className="rounded border border-line bg-white px-2 py-1 font-medium capitalize text-ink outline-none hover:border-line focus:border-ledger cursor-pointer"
+              >
+                <option value="all">All Cycles</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
 
             {hasActiveFilters && (
               <button
                 onClick={resetFilters}
-                className="font-medium text-rust hover:underline cursor-pointer"
+                className="text-[11px] text-ledger hover:text-ledger-dark underline cursor-pointer"
               >
                 Reset filters
               </button>
             )}
+          </div>
+
+          {/* Sort By Dropdown & Dynamic Count Summary */}
+          <div className="flex items-center gap-3">
+            <span className="text-[11px] text-ink/50">
+              Showing <strong className="text-ink font-semibold">{filteredSubscriptions.length}</strong> of{' '}
+              {subscriptions.length} (
+              <strong className="text-ink font-semibold">{formatMoney(filteredMonthlyTotal, baseCurrency)}</strong>
+              /mo)
+            </span>
+
+            <div className="flex items-center gap-1 text-ink/60">
+              <span>Sort:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="rounded border border-line bg-white px-2 py-1 font-medium text-ink outline-none hover:border-line focus:border-ledger cursor-pointer"
+              >
+                <option value="renewal_asc">Renewal Date (Earliest)</option>
+                <option value="renewal_desc">Renewal Date (Latest)</option>
+                <option value="cost_desc">Cost (Highest first)</option>
+                <option value="cost_asc">Cost (Lowest first)</option>
+                <option value="name_asc">Name (A → Z)</option>
+                <option value="name_desc">Name (Z → A)</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>

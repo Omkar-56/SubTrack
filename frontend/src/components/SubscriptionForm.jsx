@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import BrandLogo from './BrandLogo';
 import { VALID_CATEGORIES, formatCategoryLabel, normalizeCategory } from '../utils/brands';
 
@@ -44,6 +45,7 @@ export default function SubscriptionForm({ initial, defaultCurrency = 'USD', onS
   });
 
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   // Prevent background scrolling while modal is open
@@ -61,6 +63,7 @@ export default function SubscriptionForm({ initial, defaultCurrency = 'USD', onS
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
+    setErrorCode('');
     setSubmitting(true);
 
     try {
@@ -86,6 +89,9 @@ export default function SubscriptionForm({ initial, defaultCurrency = 'USD', onS
       await onSubmit(payload);
     } catch (err) {
       setError(err.message);
+      if (err.details?.code) {
+        setErrorCode(err.details.code);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -143,191 +149,249 @@ export default function SubscriptionForm({ initial, defaultCurrency = 'USD', onS
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Service Name */}
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-ink/70">
-                Service / Merchant
-              </label>
+              <label className="text-xs font-medium text-ink/70">Service Name</label>
               <input
                 required
-                placeholder="e.g. Netflix, Spotify, AWS"
                 value={form.name}
                 onChange={(e) => update('name', e.target.value)}
+                placeholder="e.g. Netflix, Claude Pro, Gym"
                 className="mt-1 w-full rounded-sm border border-line px-3 py-2 text-sm outline-none focus:border-ledger focus:ring-1 focus:ring-ledger"
               />
             </div>
 
-            {/* Category */}
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-ink/70">
-                Category
-              </label>
+              <label className="text-xs font-medium text-ink/70">Category</label>
               <select
                 value={form.category}
                 onChange={(e) => update('category', e.target.value)}
-                className="mt-1 w-full rounded-sm border border-line px-3 py-2 text-sm outline-none focus:border-ledger focus:ring-1 focus:ring-ledger cursor-pointer"
+                className="mt-1 w-full rounded-sm border border-line bg-white px-3 py-2 text-sm outline-none focus:border-ledger focus:ring-1 focus:ring-ledger cursor-pointer"
               >
-                {CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {formatCategoryLabel(cat)}
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {formatCategoryLabel(c)}
                   </option>
                 ))}
               </select>
             </div>
+          </div>
 
-            {/* Conditional Trial Sentinel Fields */}
-            {form.isFreeTrial ? (
-              <>
-                <div className="col-span-1 sm:col-span-2 rounded border border-amber/30 bg-amber-light/20 p-3">
-                  <p className="text-xs font-bold text-amber flex items-center gap-1.5">
-                    <span>🛡️ Sentinel Trial Protection</span>
-                  </p>
-                  <p className="text-[11px] text-ink/70 mt-1">
-                    Track cancellation deadlines so you cancel before being charged.
+          {/* Conditional Layout: Trial Mode vs Regular Mode */}
+          {form.isFreeTrial ? (
+            <div className="rounded-md border border-amber/40 bg-amber-light/25 p-4 space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber text-white text-xs font-bold">
+                  🛡️
+                </span>
+                <div>
+                  <h4 className="text-xs font-bold text-ink uppercase tracking-wider">
+                    Free Trial Protection Active
+                  </h4>
+                  <p className="text-[11px] text-ink/65">
+                    SubTrack will remind you before this trial expires so you can cancel without getting charged.
                   </p>
                 </div>
+              </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-ink/70">
-                    Trial Expiry / Cancel By
+                  <label className="text-xs font-semibold text-ink">
+                    Trial End Date (Cancellation Cutoff)
                   </label>
                   <input
                     required
                     type="date"
                     value={form.trialEndDate}
-                    onChange={(e) => update('trialEndDate', e.target.value)}
-                    className="mt-1 w-full rounded-sm border border-line px-3 py-2 text-sm outline-none focus:border-amber focus:ring-1 focus:ring-amber"
+                    onChange={(e) => {
+                      update('trialEndDate', e.target.value);
+                      update('nextRenewalDate', e.target.value);
+                    }}
+                    className="mt-1 w-full rounded-sm border border-line bg-white px-3 py-2 text-sm outline-none focus:border-ledger focus:ring-1 focus:ring-ledger font-mono"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-ink/70">
-                    Post-Trial Cost (if not cancelled)
+                  <label className="text-xs font-semibold text-ink">
+                    Auto-Charge Amount After Trial
                   </label>
+                  <div className="mt-1 flex rounded-sm border border-line bg-white focus-within:border-ledger focus-within:ring-1 focus-within:ring-ledger">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={form.postTrialAmount}
+                      onChange={(e) => update('postTrialAmount', e.target.value)}
+                      placeholder="e.g. 19.99"
+                      className="w-full px-3 py-2 text-sm outline-none tabular"
+                    />
+                    <select
+                      value={form.currency}
+                      onChange={(e) => update('currency', e.target.value)}
+                      className="border-l border-line bg-stone-50 px-2.5 py-2 text-xs font-semibold text-ink outline-none cursor-pointer"
+                    >
+                      {COMMON_CURRENCIES.map((curr) => (
+                        <option key={curr} value={curr}>
+                          {curr}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-medium text-ink/70">Subsequent Billing Cycle</label>
+                  <select
+                    value={form.billingCycle}
+                    onChange={(e) => update('billingCycle', e.target.value)}
+                    className="mt-1 w-full rounded-sm border border-line bg-white px-3 py-2 text-sm capitalize outline-none focus:border-ledger focus:ring-1 focus:ring-ledger cursor-pointer"
+                  >
+                    {CYCLES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-ink/70">Initial Trial Cost (Usually 0.00)</label>
                   <input
                     type="number"
                     step="0.01"
                     min="0"
-                    placeholder="e.g. 19.99"
-                    value={form.postTrialAmount}
-                    onChange={(e) => update('postTrialAmount', e.target.value)}
-                    className="mt-1 w-full rounded-sm border border-line px-3 py-2 text-sm outline-none focus:border-ledger focus:ring-1 focus:ring-ledger font-mono"
+                    value={form.amount}
+                    onChange={(e) => update('amount', e.target.value)}
+                    placeholder="0.00"
+                    className="mt-1 w-full rounded-sm border border-line bg-white px-3 py-2 text-sm outline-none focus:border-ledger focus:ring-1 focus:ring-ledger tabular"
                   />
                 </div>
-              </>
-            ) : null}
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="text-xs font-medium text-ink/70">Recurring Cost</label>
+                <input
+                  required
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={form.amount}
+                  onChange={(e) => update('amount', e.target.value)}
+                  placeholder="0.00"
+                  className="mt-1 w-full rounded-sm border border-line px-3 py-2 text-sm outline-none focus:border-ledger focus:ring-1 focus:ring-ledger tabular"
+                />
+              </div>
 
-            {/* Amount */}
+              <div>
+                <label className="text-xs font-medium text-ink/70">Currency</label>
+                <div className="mt-1 flex rounded-sm border border-line focus-within:border-ledger focus-within:ring-1 focus-within:ring-ledger">
+                  <select
+                    value={form.currency}
+                    onChange={(e) => update('currency', e.target.value)}
+                    className="w-full bg-white px-3 py-2 text-sm outline-none cursor-pointer"
+                  >
+                    {COMMON_CURRENCIES.map((curr) => (
+                      <option key={curr} value={curr}>
+                        {curr}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-ink/70">Billing Cycle</label>
+                <select
+                  value={form.billingCycle}
+                  onChange={(e) => update('billingCycle', e.target.value)}
+                  className="mt-1 w-full rounded-sm border border-line bg-white px-3 py-2 text-sm capitalize outline-none focus:border-ledger focus:ring-1 focus:ring-ledger cursor-pointer"
+                >
+                  {CYCLES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-ink/70">
-                {form.isFreeTrial ? 'Initial Charge (usually 0.00)' : 'Amount'}
+              <label className="text-xs font-medium text-ink/70">
+                {form.isFreeTrial ? 'Reminder Alert Date' : 'Next Renewal Date'}
               </label>
               <input
                 required
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0.00"
-                value={form.amount}
-                onChange={(e) => update('amount', e.target.value)}
+                type="date"
+                value={form.nextRenewalDate}
+                onChange={(e) => update('nextRenewalDate', e.target.value)}
                 className="mt-1 w-full rounded-sm border border-line px-3 py-2 text-sm outline-none focus:border-ledger focus:ring-1 focus:ring-ledger font-mono"
               />
             </div>
 
-            {/* Currency */}
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-ink/70">
-                Currency
-              </label>
-              <div className="mt-1 flex gap-2">
-                <select
-                  value={COMMON_CURRENCIES.includes(form.currency) ? form.currency : 'OTHER'}
-                  onChange={(e) => {
-                    if (e.target.value !== 'OTHER') update('currency', e.target.value);
-                  }}
-                  className="w-1/2 rounded-sm border border-line px-2 py-2 text-sm outline-none focus:border-ledger cursor-pointer"
-                >
-                  {COMMON_CURRENCIES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                  <option value="OTHER">Other…</option>
-                </select>
-                <input
-                  required
-                  maxLength={3}
-                  placeholder="INR"
-                  value={form.currency}
-                  onChange={(e) => update('currency', e.target.value.toUpperCase())}
-                  className="w-1/2 rounded-sm border border-line px-3 py-2 text-sm uppercase outline-none focus:border-ledger focus:ring-1 focus:ring-ledger"
-                />
-              </div>
-            </div>
-
-            {/* Billing Cycle */}
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-ink/70">
-                {form.isFreeTrial ? 'Post-Trial Cycle' : 'Billing Cycle'}
-              </label>
+              <label className="text-xs font-medium text-ink/70">Reminder Schedule</label>
               <select
-                value={form.billingCycle}
-                onChange={(e) => update('billingCycle', e.target.value)}
-                className="mt-1 w-full rounded-sm border border-line px-3 py-2 text-sm outline-none focus:border-ledger focus:ring-1 focus:ring-ledger cursor-pointer capitalize"
-              >
-                {CYCLES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Next Renewal / Start Date */}
-            {!form.isFreeTrial && (
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wider text-ink/70">
-                  Next Renewal Date
-                </label>
-                <input
-                  required
-                  type="date"
-                  value={form.nextRenewalDate}
-                  onChange={(e) => update('nextRenewalDate', e.target.value)}
-                  className="mt-1 w-full rounded-sm border border-line px-3 py-2 text-sm outline-none focus:border-ledger focus:ring-1 focus:ring-ledger"
-                />
-              </div>
-            )}
-
-            {/* Email Reminder Timing */}
-            <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-ink/70">
-                Email Reminder
-              </label>
-              <select
-                value={form.reminderDaysBefore || 3}
+                value={form.reminderDaysBefore}
                 onChange={(e) => update('reminderDaysBefore', Number(e.target.value))}
-                className="mt-1 w-full rounded-sm border border-line px-3 py-2 text-sm outline-none focus:border-ledger focus:ring-1 focus:ring-ledger cursor-pointer"
+                className="mt-1 w-full rounded-sm border border-line bg-white px-3 py-2 text-sm outline-none focus:border-ledger focus:ring-1 focus:ring-ledger cursor-pointer"
               >
-                <option value={1}>1 day before due</option>
-                <option value={2}>2 days before due</option>
-                <option value={3}>3 days before due (Recommended)</option>
-                <option value={7}>7 days before due</option>
+                <option value={1}>1 day before</option>
+                <option value={2}>2 days before (Standard)</option>
+                <option value={3}>3 days before</option>
+                <option value={5}>5 days before</option>
+                <option value={7}>7 days before (1 week)</option>
+                <option value={14}>14 days before (2 weeks)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium text-ink/70">Status</label>
+              <select
+                value={form.status}
+                onChange={(e) => update('status', e.target.value)}
+                className="mt-1 w-full rounded-sm border border-line bg-white px-3 py-2 text-sm capitalize outline-none focus:border-ledger focus:ring-1 focus:ring-ledger cursor-pointer"
+              >
+                <option value="active">Active</option>
+                <option value="paused">Paused</option>
+                <option value="cancelled">Cancelled</option>
               </select>
             </div>
 
-            {/* Notes */}
-            <div className={form.isFreeTrial ? 'col-span-1' : 'col-span-1 sm:col-span-2'}>
-              <label className="text-xs font-semibold uppercase tracking-wider text-ink/70">
-                Notes (optional)
-              </label>
-              <textarea
+            <div>
+              <label className="text-xs font-medium text-ink/70">Notes (Optional)</label>
+              <input
                 value={form.notes}
                 onChange={(e) => update('notes', e.target.value)}
-                rows={1}
                 placeholder="e.g. Cancel before 14-day trial ends"
                 className="mt-1 w-full rounded-sm border border-line px-3 py-2 text-sm outline-none focus:border-ledger focus:ring-1 focus:ring-ledger"
               />
             </div>
           </div>
 
-          {error && <p className="text-xs text-rust font-medium">{error}</p>}
+          {error && (
+            <div className="rounded bg-rust/10 border border-rust/30 p-3 text-xs text-rust">
+              <p className="font-medium">{error}</p>
+              {errorCode === 'SUBSCRIPTION_LIMIT_REACHED' && (
+                <div className="mt-2.5 pt-2 border-t border-rust/20 flex items-center justify-between">
+                  <span className="text-[11px] text-ink/70">Unlock unlimited tracking with Pro</span>
+                  <Link
+                    to="/pricing"
+                    onClick={onCancel}
+                    className="rounded bg-ledger px-3 py-1 text-xs font-semibold text-white hover:bg-ledger-dark transition-colors"
+                  >
+                    View Plans →
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-line">

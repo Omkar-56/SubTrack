@@ -25,7 +25,7 @@ const linkClass = ({ isActive }) =>
   }`;
 
 export default function Navbar() {
-  const { user, setBaseCurrency, logout } = useAuth();
+  const { user, isPro, setBaseCurrency, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [payingSub, setPayingSub] = useState(null);
@@ -70,7 +70,7 @@ export default function Navbar() {
   return (
     <>
       <header className="border-b border-line bg-white/80 backdrop-blur-xs sticky top-0 z-30">
-        <div className={`mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3.5 max-w-7xl`}>
+        <div className="mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3.5 max-w-7xl">
           <div className="flex items-center gap-8">
             <NavLink to={user ? '/dashboard' : '/'} className="font-display text-lg font-bold tracking-tight text-ink flex items-center gap-2">
               <span className="inline-block w-2.5 h-2.5 rounded-full bg-ledger"></span>
@@ -80,12 +80,30 @@ export default function Navbar() {
               <nav className="flex gap-6">
                 <NavLink to="/dashboard" className={linkClass}>Overview</NavLink>
                 <NavLink to="/subscriptions" className={linkClass}>Subscriptions</NavLink>
+                <NavLink to="/pricing" className={linkClass}>Plans</NavLink>
               </nav>
             )}
           </div>
 
           {user ? (
             <div className="flex items-center gap-3 sm:gap-4">
+              {/* Pro Badge or Upgrade Button */}
+              {isPro ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-ledger-light px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-ledger-dark border border-ledger/20 shadow-2xs">
+                  <span className="h-1.5 w-1.5 rounded-full bg-ledger"></span>
+                  {user.plan === 'lifetime' ? 'Founder' : 'Pro'}
+                </span>
+              ) : (
+                <Link
+                  to="/pricing"
+                  className="inline-flex items-center gap-1 rounded-full border border-ledger/30 bg-ledger-light px-3 py-1 text-xs font-semibold text-ledger-dark hover:bg-ledger hover:text-white transition-all shadow-2xs"
+                  title="Unlock unlimited tracking and features with SubTrack Pro"
+                >
+                  <span>✨</span>
+                  <span>Upgrade</span>
+                </Link>
+              )}
+
               {/* Due Date Reminders Bell & Trial Sentinel */}
               <ReminderBell
                 onConfirmPayment={(sub) => setPayingSub(sub)}
@@ -125,6 +143,12 @@ export default function Navbar() {
             </div>
           ) : (
             <div className="flex items-center gap-4">
+              <Link
+                to="/pricing"
+                className="text-xs font-semibold text-ink/70 hover:text-ink transition-colors"
+              >
+                Pricing
+              </Link>
               <Link
                 to="/login"
                 className="text-xs font-semibold text-ink/70 hover:text-ink transition-colors"

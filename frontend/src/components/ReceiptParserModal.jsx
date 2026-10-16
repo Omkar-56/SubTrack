@@ -1,8 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import { formatMoney } from '../utils/date';
 
 export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
+  const { user, isPro, refreshUser } = useAuth();
   const [tab, setTab] = useState('upload'); // 'upload' | 'text'
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
@@ -11,9 +14,13 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
   const [progress, setProgress] = useState(0);
   const [progressStatus, setProgressStatus] = useState('');
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState('');
   const [successResult, setSuccessResult] = useState(null);
 
   const fileInputRef = useRef(null);
+
+  const scansUsed = user?.aiScansUsed || 0;
+  const isScanLimitReached = !isPro && scansUsed >= 2;
 
   // Reset state when opening/closing
   useEffect(() => {
@@ -25,6 +32,7 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
       setProgress(0);
       setProgressStatus('');
       setError('');
+      setErrorCode('');
       setSuccessResult(null);
     }
   }, [isOpen]);
@@ -59,6 +67,7 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
 
     setFile(selected);
     setError('');
+    setErrorCode('');
 
     if (selected.type.startsWith('image/')) {
       const url = URL.createObjectURL(selected);
@@ -79,6 +88,7 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
       }
       setFile(dropped);
       setError('');
+      setErrorCode('');
       if (dropped.type.startsWith('image/')) {
         const url = URL.createObjectURL(dropped);
         setPreviewUrl(url);
@@ -104,6 +114,7 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
 
   async function handleParse() {
     setError('');
+    setErrorCode('');
     setIsProcessing(true);
     setProgress(15);
     setProgressStatus('Reading document data…');
@@ -122,14 +133,12 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
         setProgress(30);
         setProgressStatus('Encoding document for Gemini AI analysis…');
 
-        // Check if plain text/docx or binary
         if (
           file.type.startsWith('image/') ||
           file.type === 'application/pdf'
         ) {
           fileBase64 = await readFileAsBase64(file);
         } else {
-          // Plain text / markdown / csv / etc.
           const text = await file.text();
           textToSend = text;
         }
@@ -139,7 +148,6 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
         }
       }
 
-      // Animate progress smoothly while Gemini backend analyzes
       setProgress(50);
       setProgressStatus('Analyzing receipt with Gemini LLM…');
 
@@ -163,6 +171,8 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
       setProgress(95);
       setProgressStatus('Creating subscriptions in your account…');
 
+      if (refreshUser) refreshUser();
+
       setTimeout(() => {
         setProgress(100);
         setProgressStatus('Successfully parsed & imported!');
@@ -175,6 +185,9 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
       setProgress(0);
       setProgressStatus('');
       setError(err.message || 'Failed to parse receipt.');
+      if (err.details?.code) {
+        setErrorCode(err.details.code);
+      }
     }
   }
 
@@ -218,6 +231,33 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
 
         {/* Content Body */}
         <div className="p-5 overflow-y-auto space-y-4">
+          {/* Plan Quota Status Indicator */}
+          {isPro ? (
+            <div className="flex items-center justify-between rounded bg-ledger-light/60 border border-ledger/20 px-3.5 py-2 text-xs">
+              <span className="flex items-center gap-1.5 font-semibold text-ledger-dark">
+                <span>✨</span>
+                <span>Unlimited AI Receipt Parsing</span>
+              </span>
+              <span className="rounded-full bg-ledger px-2 py-0.5 text-[10px] font-bold text-white uppercase tracking-wider">
+                Pro
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between rounded bg-paper border border-line px-3.5 py-2 text-xs">
+              <div className="flex items-center gap-1.5 text-ink/70">
+                <span className="font-semibold text-ink">Free Tier Quota:</span>
+                <span>{scansUsed} / 2 scans used this month</span>
+              </div>
+              <Link
+                to="/pricing"
+                onClick={onClose}
+                className="font-semibold text-ledger hover:text-ledger-dark underline text-[11px]"
+              >
+                Upgrade
+              </Link>
+            </div>
+          )}
+
           {/* Success State View */}
           {successResult ? (
             <div className="space-y-4 text-center py-2">
@@ -272,6 +312,33 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
             </div>
           ) : (
             <>
+              {/* Scan Limit Exceeded Callout */}
+              {isScanLimitReached && (
+                <div className="rounded-md border border-amber/40 bg-amber-light/30 p-3.5 text-xs text-ink">
+                  <div className="flex items-start gap-2.5">
+                    <span className="text-base">✨</span>
+                    <div>
+                      <p className="font-semibold text-ink">
+                        You have reached your 2 free AI scans for this month.
+                      </p>
+                      <p className="text-ink/70 mt-1 text-[11px] leading-relaxed">
+                        Upgrade to SubTrack Pro for unlimited receipt & invoice parsing, urgent trial deadline sentinels, and 12-month spend forecasts.
+                      </p>
+                      <div className="mt-2.5">
+                        <Link
+                          to="/pricing"
+                          onClick={onClose}
+                          className="inline-flex items-center gap-1.5 rounded bg-ledger px-3 py-1.5 text-xs font-semibold text-white shadow-2xs hover:bg-ledger-dark transition-colors"
+                        >
+                          <span>Upgrade to Pro</span>
+                          <span>→</span>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Tab Selector */}
               <div className="flex border-b border-line text-xs font-medium">
                 <button
@@ -279,6 +346,7 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
                   onClick={() => {
                     setTab('upload');
                     setError('');
+                    setErrorCode('');
                   }}
                   disabled={isProcessing}
                   className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer ${
@@ -294,6 +362,7 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
                   onClick={() => {
                     setTab('text');
                     setError('');
+                    setErrorCode('');
                   }}
                   disabled={isProcessing}
                   className={`pb-2.5 px-3 border-b-2 transition-colors cursor-pointer ${
@@ -315,8 +384,12 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
                       e.stopPropagation();
                     }}
                     onDrop={handleDrop}
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex flex-col items-center justify-center border-2 border-dashed border-line rounded-md p-6 text-center hover:border-ledger/50 bg-stone-50/50 hover:bg-stone-50 transition-colors cursor-pointer"
+                    onClick={() => !isScanLimitReached && fileInputRef.current?.click()}
+                    className={`flex flex-col items-center justify-center border-2 border-dashed rounded-md p-6 text-center transition-colors ${
+                      isScanLimitReached
+                        ? 'border-line/60 bg-paper/50 cursor-not-allowed opacity-60'
+                        : 'border-line hover:border-ledger/50 bg-stone-50/50 hover:bg-stone-50 cursor-pointer'
+                    }`}
                   >
                     <input
                       ref={fileInputRef}
@@ -324,7 +397,7 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
                       accept="image/*,application/pdf,.doc,.docx,.txt"
                       className="hidden"
                       onChange={handleFileChange}
-                      disabled={isProcessing}
+                      disabled={isProcessing || isScanLimitReached}
                     />
 
                     {previewUrl ? (
@@ -368,9 +441,9 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
                     rows={6}
                     value={pastedText}
                     onChange={(e) => setPastedText(e.target.value)}
-                    disabled={isProcessing}
+                    disabled={isProcessing || isScanLimitReached}
                     placeholder="e.g. Thanks for your Netflix subscription payment of $15.99 on Oct 25, 2026. Next billing date: Nov 25, 2026..."
-                    className="mt-1.5 w-full rounded border border-line bg-paper/30 p-2.5 text-xs text-ink outline-none focus:border-ledger font-mono"
+                    className="mt-1.5 w-full rounded border border-line bg-paper/30 p-2.5 text-xs text-ink outline-none focus:border-ledger font-mono disabled:opacity-50"
                   />
                 </div>
               )}
@@ -385,7 +458,6 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
                     </span>
                     <span className="tabular font-semibold text-ink/60">{progress}%</span>
                   </div>
-                  {/* Progress Bar Container */}
                   <div className="h-2 w-full overflow-hidden rounded-full bg-stone-100 border border-line/40">
                     <div
                       className="h-full bg-gradient-to-r from-amber to-ledger transition-all duration-300 rounded-full"
@@ -396,8 +468,20 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
               )}
 
               {error && (
-                <div className="rounded bg-rust/10 border border-rust/30 p-2.5 text-xs text-rust">
-                  {error}
+                <div className="rounded bg-rust/10 border border-rust/30 p-3 text-xs text-rust">
+                  <p className="font-medium">{error}</p>
+                  {errorCode === 'AI_SCAN_LIMIT_REACHED' && (
+                    <div className="mt-2 pt-2 border-t border-rust/20 flex items-center justify-between">
+                      <span className="text-[11px] text-ink/70">Upgrade for unlimited parsing</span>
+                      <Link
+                        to="/pricing"
+                        onClick={onClose}
+                        className="rounded bg-ledger px-3 py-1 text-xs font-semibold text-white hover:bg-ledger-dark transition-colors"
+                      >
+                        View Plans →
+                      </Link>
+                    </div>
+                  )}
                 </div>
               )}
             </>
@@ -418,7 +502,12 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
             <button
               type="button"
               onClick={handleParse}
-              disabled={isProcessing || (tab === 'upload' && !file) || (tab === 'text' && !pastedText.trim())}
+              disabled={
+                isProcessing ||
+                isScanLimitReached ||
+                (tab === 'upload' && !file) ||
+                (tab === 'text' && !pastedText.trim())
+              }
               className="flex items-center gap-1.5 rounded bg-ledger px-4 py-1.5 text-xs font-semibold text-white shadow-2xs hover:bg-ledger-dark transition-colors disabled:opacity-50 cursor-pointer"
             >
               <span>{isProcessing ? 'Parsing…' : 'Parse & Add with Gemini'}</span>

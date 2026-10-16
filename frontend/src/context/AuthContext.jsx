@@ -7,6 +7,17 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const { user } = await api.me();
+      setUser(user);
+      return user;
+    } catch (err) {
+      console.error('Failed to refresh user:', err);
+      return null;
+    }
+  }, []);
+
   useEffect(() => {
     const token = localStorage.getItem('subtrack_token');
     if (!token) {
@@ -52,8 +63,22 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
+  const isPro = Boolean(user && (user.plan === 'pro' || user.plan === 'lifetime'));
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, loginWithGoogle, setBaseCurrency, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        isPro,
+        refreshUser,
+        login,
+        register,
+        loginWithGoogle,
+        setBaseCurrency,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
