@@ -1,3 +1,21 @@
+@font-face {
+  font-family: 'General Sans';
+  src: url('/font/GeneralSans-Variable.ttf') format('truetype-variations'),
+       url('/font/GeneralSans-Variable.ttf') format('truetype');
+  font-weight: 200 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Quicksand';
+  src: url('/font/Quicksand-Variable.ttf') format('truetype-variations'),
+       url('/font/Quicksand-Variable.ttf') format('truetype');
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -12,4 +30,75 @@ body {
 
 ::selection {
   background-color: theme('colors.ledger.light');
+}
+
+/* Secondary font (Quicksand) for smaller text */
+small,
+.text-xs,
+.text-\[10px\],
+.text-\[11px\],
+.text-\[12px\],
+.text-sm {
+  font-family: 'Quicksand', sans-serif;
+}
+
+/* Base and larger text use primary font (General Sans) */
+.text-base,
+.text-lg,
+.text-xl,
+.text-2xl,
+.text-3xl,
+.text-4xl,
+.text-5xl,
+.text-6xl,
+.text-\[52px\] {
+  font-family: 'General Sans', sans-serif;
+}
+
+@media (min-width: 640px) {
+  .sm\:text-base,
+  .sm\:text-lg,
+  .sm\:text-xl,
+  .sm\:text-2xl,
+  .sm\:text-3xl,
+  .sm\:text-4xl {
+    font-family: 'General Sans', sans-serif;
+  }
+}
+
+@media (min-width: 768px) {
+  .md\:text-base,
+  .md\:text-lg,
+  .md\:text-xl,
+  .md\:text-2xl {
+    font-family: 'General Sans', sans-serif;
+  }
+}
+
+@media (min-width: 1024px) {
+  .lg\:text-base,
+  .lg\:text-lg,
+  .lg\:text-xl,
+  .lg\:text-2xl,
+  .lg\:text-\[52px\] {
+    font-family: 'General Sans', sans-serif;
+  }
+}
+
+/* UI controls, headings, and explicitly primary elements retain primary font */
+button,
+input,
+select,
+textarea,
+h1, h2, h3, h4, h5, h6,
+.font-display,
+.font-sans,
+.font-primary {
+  font-family: 'General Sans', sans-serif;
+}
+
+/* Utilities to explicitly apply secondary font */
+.font-secondary,
+.font-quicksand {
+  font-family: 'Quicksand', sans-serif !important;
 }

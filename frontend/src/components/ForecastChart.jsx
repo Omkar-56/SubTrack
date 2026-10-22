@@ -5,10 +5,10 @@ import {
 import { formatMoney } from '../utils/date';
 
 const COLORS = {
-  due: '#1F6F54',
+  due: '#064e3b',
   cumulative: '#C77D2B',
-  grid: '#D9DEDA',
-  axis: '#16231F',
+  grid: '#e8e2d5',
+  axis: '#353535',
 };
 
 function ForecastTooltip({ active, payload, label, currency = 'USD' }) {

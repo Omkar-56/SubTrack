@@ -265,7 +265,7 @@ export function normalizeCategory(val = '') {
 }
 
 export const CATEGORY_CHART_COLORS = {
-  'software / ai': '#1F6F54',   // Forest Green (Primary SubTrack Ledger)
+  'software / ai': '#064e3b',   // Emerald Green (Primary SubTrack Ledger)
   entertainment: '#2563EB',     // Royal Blue
   gaming: '#7C3AED',            // Violet / Purple
   'news and media': '#0284C7',  // Sky / Ocean Blue

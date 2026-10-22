@@ -4,13 +4,13 @@ export default {
   theme: {
     extend: {
       colors: {
-        paper: '#F4F6F5',
-        ink: '#16231F',
-        line: '#D9DEDA',
+        paper: '#fcf7ed',
+        ink: '#353535',
+        line: '#e8e2d5',
         ledger: {
-          DEFAULT: '#1F6F54',
-          dark: '#154F3C',
-          light: '#E6F0EB',
+          DEFAULT: '#064e3b',
+          dark: '#043c2e',
+          light: '#e2ebe5',
         },
         amber: {
           DEFAULT: '#C77D2B',
@@ -22,8 +22,11 @@ export default {
         },
       },
       fontFamily: {
-        display: ['"Space Grotesk"', 'sans-serif'],
-        sans: ['Inter', 'sans-serif'],
+        primary: ['"General Sans"', 'sans-serif'],
+        secondary: ['Quicksand', 'sans-serif'],
+        display: ['"General Sans"', 'sans-serif'],
+        sans: ['"General Sans"', 'sans-serif'],
+        quicksand: ['Quicksand', 'sans-serif'],
       },
     },
   },

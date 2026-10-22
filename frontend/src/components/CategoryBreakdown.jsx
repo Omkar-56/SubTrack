@@ -64,7 +64,7 @@ export default function CategoryBreakdown({ categories = [], totalMonthly = 0, c
                     key={`cell-${index}`}
                     fill={entry.color}
                     className="transition-all duration-200 cursor-pointer"
-                    stroke={activeIndex === index ? '#1F6F54' : '#fff'}
+                    stroke={activeIndex === index ? '#064e3b' : '#fff'}
                     strokeWidth={activeIndex === index ? 2 : 1}
                     opacity={activeIndex === null || activeIndex === index ? 1 : 0.45}
                   />

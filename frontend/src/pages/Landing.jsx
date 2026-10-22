@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import BrandLogo from '../components/BrandLogo';
+import Footer from '../components/Footer';
 
 const FEATURES = [
   {
@@ -40,18 +41,18 @@ const SAMPLE_COMPANIES = [
 
 export default function Landing() {
   return (
-    <div className="w-full space-y-24 pb-16">
+    <div className="w-full space-y-24">
       {/*
         Hero Section:
         Seamless background #F5FCF8 matching hero-final3.png so the illustration on the right blends perfectly.
       */}
-      <section className="relative w-full bg-[#f5f8f6] overflow-hidden border-b border-line/60">
+      <section className="relative w-full bg-[#fcf7ed] overflow-hidden border-b border-line/60">
         <div className="relative mx-auto max-w-[1440px] w-full px-6 sm:px-10 lg:px-14 py-4">
           <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-10 lg:gap-8">
             {/* Left Side: Headline, Subtitle, CTA & Trust Points */}
             <div className="lg:col-span-5 space-y-6 text-left z-10">
               {/* Main Headline */}
-              <h1 className="font-display text-4xl sm:text-5xl lg:text-[52px] font-bold tracking-tight text-ink leading-[1.12]">
+              <h1 className="font-display text-4xl sm:text-5xl lg:text-[52px] font-semibold tracking-tight text-ink leading-[1.12]">
                 Track subscriptions. <br />
                 <span className="text-ledger">Stay in control.</span>
               </h1>
@@ -108,7 +109,7 @@ export default function Landing() {
             <div className="lg:col-span-7 flex justify-center lg:justify-end items-center">
               <div className="relative w-full max-w-[680px] lg:max-w-none">
                 <img
-                  src="/hero-final5.png"
+                  src="/Images/hero-bg.png"
                   alt="SubTrack dashboard preview with active subscriptions and spend analytics"
                   className="w-full h-auto object-contain select-none pointer-events-none drop-shadow-sm"
                   loading="eager"
@@ -120,7 +121,7 @@ export default function Landing() {
       </section>
 
       {/* Main Content Container for Below-Hero Sections */}
-      <div className="mx-auto max-w-6xl px-6 sm:px-8 space-y-24">
+      <div className="mx-auto max-w-[1440px] w-full px-6 sm:px-10 lg:px-14 space-y-24">
         {/* Brand Compatibility Strip */}
         <section className="text-center">
           <p className="font-display text-xs font-semibold uppercase tracking-wider text-ink/40">
@@ -184,17 +185,9 @@ export default function Landing() {
             </div>
           </div>
         </section>
-
-        {/* Minimal Footer */}
-        <footer className="border-t border-line pt-8 pb-4 text-center text-xs text-ink/40">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <span className="inline-block w-2 h-2 rounded-full bg-ledger"></span>
-            <span className="font-display font-semibold text-ink/70">SubTrack</span>
-            <span>· Subscription Intelligence & Ledger</span>
-          </div>
-          <p>© {new Date().getFullYear()} SubTrack. All rights reserved.</p>
-        </footer>
       </div>
+
+      <Footer />
     </div>
   );
 }

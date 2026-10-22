@@ -5,10 +5,10 @@ import {
 import { formatMoney } from '../utils/date';
 
 const COLORS = {
-  line: '#1F6F54',
-  fill: '#EBF3F0',
-  grid: '#D9DEDA',
-  axis: '#16231F',
+  line: '#064e3b',
+  fill: '#e2ebe5',
+  grid: '#e8e2d5',
+  axis: '#353535',
   average: '#C77D2B',
 };
 
