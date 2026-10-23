@@ -21,7 +21,7 @@ export default function Footer() {
 
           {/* Brand column */}
           <div className="lg:col-span-5 space-y-4">
-            <div className="flex items-center gap-2.5">
+            <Link to="/" className="flex items-center gap-2 sm:gap-2.5 transition-opacity hover:opacity-90">
               {/* Invert logos so they show white on the dark green bg */}
               <img
                 src="/logo/logo.svg"
@@ -31,9 +31,9 @@ export default function Footer() {
               <img
                 src="/logo/logo-t.svg"
                 alt="SubTrack"
-                className="h-7 w-auto object-contain brightness-0 invert opacity-80"
+                className="h-7 w-auto object-contain brightness-0 invert opacity-90"
               />
-            </div>
+            </Link>
             <p className="text-sm text-white/55 leading-relaxed max-w-xs">
               The intentional, high-clarity subscription ledger. Track recurring services, get
               alerted before renewals, and keep what you love.

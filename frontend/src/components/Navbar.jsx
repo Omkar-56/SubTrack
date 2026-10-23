@@ -76,12 +76,12 @@ export default function Navbar() {
               <img
                 src="/logo/logo.svg"
                 alt="SubTrack"
-                className="h-7 sm:h-7.5 w-auto object-contain"
+                className="h-7 w-auto object-contain"
               />
               <img
                 src="/logo/logo-t.svg"
                 alt="SubTrack"
-                className="h-7 sm:h-7.5 w-auto object-contain"
+                className="h-7 w-auto object-contain"
               />
             </NavLink>
             {user && (
