@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import ReminderBell from './ReminderBell';
@@ -30,6 +30,17 @@ export default function Navbar() {
   const location = useLocation();
   const [payingSub, setPayingSub] = useState(null);
   const [guideSub, setGuideSub] = useState(null);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 8);
+    };
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const isLandingPage = !user && location.pathname === '/';
 
@@ -69,8 +80,12 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="border-b border-line bg-paper/90 backdrop-blur-xs sticky top-0 z-30">
-        <div className="mx-auto flex items-center justify-between px-6 sm:px-10 lg:px-14 py-3 max-w-[1440px] w-full">
+      <header
+        className={`sticky top-0 z-30 bg-paper/90 backdrop-blur-xs border-b transition-colors duration-200 ${
+          isScrolled ? 'border-line/70' : 'border-transparent'
+        }`}
+      >
+        <div className="mx-auto flex items-center justify-between px-6 sm:px-10 lg:px-14 py-5 sm:py-6 max-w-[1440px] w-full">
           <div className="flex items-center gap-8">
             <NavLink to={user ? '/dashboard' : '/'} className="flex items-center gap-2 sm:gap-2.5 transition-opacity hover:opacity-90">
               <img
