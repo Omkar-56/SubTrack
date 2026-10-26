@@ -6,6 +6,9 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [guestCurrency, setGuestCurrency] = useState(
+    () => localStorage.getItem('subtrack_base_currency') || 'USD'
+  );
 
   useEffect(() => {
     const token = localStorage.getItem('subtrack_token');
@@ -39,21 +42,27 @@ export function AuthProvider({ children }) {
   }, []);
 
   const setBaseCurrency = useCallback(async (currency) => {
-    try {
-      const { user } = await api.updateCurrency(currency);
-      setUser(user);
-    } catch (err) {
-      console.error('Failed to update currency preference:', err);
+    localStorage.setItem('subtrack_base_currency', currency);
+    setGuestCurrency(currency);
+    if (user) {
+      try {
+        const { user: updated } = await api.updateCurrency(currency);
+        setUser(updated);
+      } catch (err) {
+        console.error('Failed to update currency preference:', err);
+      }
     }
-  }, []);
+  }, [user]);
 
   const logout = useCallback(() => {
     localStorage.removeItem('subtrack_token');
     setUser(null);
   }, []);
 
+  const baseCurrency = user?.baseCurrency || guestCurrency || 'USD';
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, loginWithGoogle, setBaseCurrency, logout }}>
+    <AuthContext.Provider value={{ user, baseCurrency, loading, login, register, loginWithGoogle, setBaseCurrency, logout }}>
       {children}
     </AuthContext.Provider>
   );

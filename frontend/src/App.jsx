@@ -27,13 +27,9 @@ export default function App() {
         <Route
           path="/"
           element={
-            user ? (
-              <Navigate to="/dashboard" replace />
-            ) : (
-              <main className="w-full">
-                <Landing />
-              </main>
-            )
+            <main className="w-full">
+              <Landing />
+            </main>
           }
         />
 
@@ -42,7 +38,7 @@ export default function App() {
           path="/login"
           element={
             user ? (
-              <Navigate to="/dashboard" replace />
+              <Navigate to="/subscriptions" replace />
             ) : (
               <main className="mx-auto max-w-[1440px] w-full px-6 sm:px-10 lg:px-14 py-10">
                 <Login />
@@ -54,7 +50,7 @@ export default function App() {
           path="/register"
           element={
             user ? (
-              <Navigate to="/dashboard" replace />
+              <Navigate to="/subscriptions" replace />
             ) : (
               <main className="mx-auto max-w-[1440px] w-full px-6 sm:px-10 lg:px-14 py-10">
                 <Register />

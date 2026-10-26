@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { api } from '../api/client';
 
 export default function GoogleSignInButton({ text = 'signin_with', onError }) {
   const { loginWithGoogle } = useAuth();
@@ -47,7 +48,16 @@ export default function GoogleSignInButton({ text = 'signin_with', onError }) {
     async function handleCredentialResponse(response) {
       try {
         await loginWithGoogle(response.credential);
-        navigate('/dashboard');
+        const pending = sessionStorage.getItem('subtrack_pending_subscription');
+        if (pending) {
+          try {
+            await api.createSubscription(JSON.parse(pending));
+            sessionStorage.removeItem('subtrack_pending_subscription');
+          } catch (subErr) {
+            console.error('Failed to auto-create pending subscription:', subErr);
+          }
+        }
+        navigate('/subscriptions');
       } catch (err) {
         if (onError) onError(err.message || 'Google sign-in failed');
       }

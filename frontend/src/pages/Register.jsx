@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../api/client';
 import GoogleSignInButton from '../components/GoogleSignInButton';
 
 export default function Register() {
@@ -18,7 +19,18 @@ export default function Register() {
     setSubmitting(true);
     try {
       await register(name, email, password);
-      navigate('/');
+
+      const pending = sessionStorage.getItem('subtrack_pending_subscription');
+      if (pending) {
+        try {
+          await api.createSubscription(JSON.parse(pending));
+          sessionStorage.removeItem('subtrack_pending_subscription');
+        } catch (subErr) {
+          console.error('Failed to auto-create pending subscription:', subErr);
+        }
+      }
+
+      navigate('/subscriptions');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -28,6 +40,22 @@ export default function Register() {
 
   return (
     <div className="mx-auto max-w-sm">
+      {/* Mode switcher tabs */}
+      <div className="flex rounded-sm bg-stone-100 p-1 mb-6 text-xs font-semibold">
+        <Link
+          to="/login"
+          className="flex-1 rounded-xs py-1.5 text-ink/50 hover:text-ink text-center transition-colors"
+        >
+          Log In
+        </Link>
+        <button
+          type="button"
+          className="flex-1 rounded-xs py-1.5 bg-white text-ink shadow-2xs text-center cursor-default"
+        >
+          Sign Up
+        </button>
+      </div>
+
       <h1 className="font-display text-2xl font-semibold">Create your account</h1>
       <p className="mt-1 text-sm text-ink/60">Start tracking what you pay for, monthly.</p>
 
