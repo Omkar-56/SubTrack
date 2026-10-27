@@ -9,6 +9,11 @@ export function AuthProvider({ children }) {
   const [guestCurrency, setGuestCurrency] = useState(
     () => localStorage.getItem('subtrack_base_currency') || 'USD'
   );
+  const [authModal, setAuthModal] = useState(null); // null | 'login' | 'register'
+
+  const openLogin = useCallback(() => setAuthModal('login'), []);
+  const openRegister = useCallback(() => setAuthModal('register'), []);
+  const closeAuthModal = useCallback(() => setAuthModal(null), []);
 
   useEffect(() => {
     const token = localStorage.getItem('subtrack_token');
@@ -27,18 +32,21 @@ export function AuthProvider({ children }) {
     const { user, token } = await api.login({ email, password });
     localStorage.setItem('subtrack_token', token);
     setUser(user);
+    setAuthModal(null);
   }, []);
 
   const register = useCallback(async (name, email, password) => {
     const { user, token } = await api.register({ name, email, password });
     localStorage.setItem('subtrack_token', token);
     setUser(user);
+    setAuthModal(null);
   }, []);
 
   const loginWithGoogle = useCallback(async (credential) => {
     const { user, token } = await api.googleAuth(credential);
     localStorage.setItem('subtrack_token', token);
     setUser(user);
+    setAuthModal(null);
   }, []);
 
   const setBaseCurrency = useCallback(async (currency) => {
@@ -59,10 +67,28 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
+  const isPro = Boolean(user && (user.plan === 'pro' || user.plan === 'lifetime'));
   const baseCurrency = user?.baseCurrency || guestCurrency || 'USD';
 
   return (
-    <AuthContext.Provider value={{ user, baseCurrency, loading, login, register, loginWithGoogle, setBaseCurrency, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        baseCurrency,
+        loading,
+        isPro,
+        authModal,
+        openLogin,
+        openRegister,
+        closeAuthModal,
+        setAuthModal,
+        login,
+        register,
+        loginWithGoogle,
+        setBaseCurrency,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

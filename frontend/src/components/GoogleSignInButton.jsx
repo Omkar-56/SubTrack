@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../api/client';
 
-export default function GoogleSignInButton({ text = 'signin_with', onError }) {
+export default function GoogleSignInButton({ text = 'signin_with', onSuccess, onError }) {
   const { loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const btnContainerRef = useRef(null);
@@ -48,16 +47,11 @@ export default function GoogleSignInButton({ text = 'signin_with', onError }) {
     async function handleCredentialResponse(response) {
       try {
         await loginWithGoogle(response.credential);
-        const pending = sessionStorage.getItem('subtrack_pending_subscription');
-        if (pending) {
-          try {
-            await api.createSubscription(JSON.parse(pending));
-            sessionStorage.removeItem('subtrack_pending_subscription');
-          } catch (subErr) {
-            console.error('Failed to auto-create pending subscription:', subErr);
-          }
+        if (onSuccess) {
+          onSuccess();
+        } else {
+          navigate('/dashboard');
         }
-        navigate('/subscriptions');
       } catch (err) {
         if (onError) onError(err.message || 'Google sign-in failed');
       }
@@ -80,12 +74,12 @@ export default function GoogleSignInButton({ text = 'signin_with', onError }) {
         text: text,
         shape: 'rectangular',
         logo_alignment: 'left',
-        width: 384,
+        width: 320,
       });
     } catch (err) {
       console.error('Google button init error:', err);
     }
-  }, [scriptLoaded, clientId, text, loginWithGoogle, navigate, onError]);
+  }, [scriptLoaded, clientId, text, loginWithGoogle, navigate, onSuccess, onError]);
 
   if (!clientId) {
     return (

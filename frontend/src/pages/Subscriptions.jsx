@@ -99,7 +99,7 @@ export default function Subscriptions() {
 
   useEffect(() => {
     refresh();
-  }, [baseCurrency]);
+  }, [user, baseCurrency]);
 
   useEffect(() => {
     function onExternalRefresh() {
@@ -107,7 +107,7 @@ export default function Subscriptions() {
     }
     window.addEventListener('subtrack:refresh', onExternalRefresh);
     return () => window.removeEventListener('subtrack:refresh', onExternalRefresh);
-  }, [baseCurrency]);
+  }, [user, baseCurrency]);
 
   async function handleCreate(data) {
     try {
