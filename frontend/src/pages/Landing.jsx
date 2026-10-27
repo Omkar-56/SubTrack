@@ -68,24 +68,13 @@ export default function Landing() {
 
               {/* CTA Button */}
               <div className="pt-1 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                {user ? (
-                  <Link
-                    to="/subscriptions"
-                    className="inline-flex items-center justify-center gap-2 rounded-md bg-ledger px-6 py-3.5 text-sm font-semibold text-white shadow-md hover:bg-ledger-dark transition-all transform hover:-translate-y-0.5 cursor-pointer"
-                  >
-                    <span>Track Subscriptions</span>
-                    <span>→</span>
-                  </Link>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={openRegister}
-                    className="inline-flex items-center justify-center gap-2 rounded-md bg-ledger px-6 py-3.5 text-sm font-semibold text-white shadow-md hover:bg-ledger-dark transition-all transform hover:-translate-y-0.5 cursor-pointer"
-                  >
-                    <span>Track Subscriptions</span>
-                    <span>→</span>
-                  </button>
-                )}
+                <Link
+                  to="/subscriptions"
+                  className="inline-flex items-center justify-center gap-2 rounded-md bg-ledger px-6 py-3.5 text-sm font-semibold text-white shadow-md hover:bg-ledger-dark transition-all transform hover:-translate-y-0.5 cursor-pointer"
+                >
+                  <span>Track Subscriptions</span>
+                  <span>→</span>
+                </Link>
               </div>
 
               {/* Trust points */}
