@@ -66,10 +66,10 @@ export default function Landing() {
               {/* CTA Button */}
               <div className="pt-1 flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 <Link
-                  to="/register"
+                  to="/subscriptions"
                   className="inline-flex items-center justify-center gap-2 rounded-md bg-ledger px-6 py-3.5 text-sm font-semibold text-white shadow-md hover:bg-ledger-dark transition-all transform hover:-translate-y-0.5 cursor-pointer"
                 >
-                  <span>Get Started Free</span>
+                  <span>Track Subscriptions</span>
                   <span>→</span>
                 </Link>
               </div>
@@ -177,7 +177,7 @@ export default function Landing() {
             </p>
             <div className="pt-4 flex flex-wrap justify-center gap-4">
               <Link
-                to="/register"
+                to="/subscriptions"
                 className="rounded-sm bg-ledger px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-ledger-dark transition-all transform hover:-translate-y-0.5"
               >
                 Get Started for Free →

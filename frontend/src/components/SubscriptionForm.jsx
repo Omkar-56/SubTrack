@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import BrandLogo from './BrandLogo';
 import { VALID_CATEGORIES, formatCategoryLabel, normalizeCategory } from '../utils/brands';
 
@@ -23,6 +25,8 @@ const emptyForm = {
 };
 
 export default function SubscriptionForm({ initial, defaultCurrency = 'USD', onSubmit, onCancel }) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [form, setForm] = useState(() => {
     if (!initial) {
       return {
@@ -82,6 +86,13 @@ export default function SubscriptionForm({ initial, defaultCurrency = 'USD', onS
         postTrialCurrency: finalCurrency,
         nextRenewalDate: form.isFreeTrial && trialEnd ? trialEnd : form.nextRenewalDate,
       };
+
+      if (!user) {
+        sessionStorage.setItem('subtrack_pending_subscription', JSON.stringify(payload));
+        if (onCancel) onCancel();
+        navigate('/register');
+        return;
+      }
 
       await onSubmit(payload);
     } catch (err) {

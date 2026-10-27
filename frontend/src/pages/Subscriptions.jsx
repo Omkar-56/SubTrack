@@ -22,9 +22,34 @@ function monthlyEquivalent(sub) {
   const amt = sub.convertedAmount !== undefined ? sub.convertedAmount : Number(sub.amount);
   return amt / months;
 }
+function getGuestSubs() {
+  const stored = localStorage.getItem('subtrack_guest_subs');
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        // Purge any pre-populated demo subscriptions
+        const realSubs = parsed.filter(
+          (s) => !(typeof s.id === 'string' && s.id.startsWith('demo-'))
+        );
+        if (realSubs.length !== parsed.length) {
+          localStorage.setItem('subtrack_guest_subs', JSON.stringify(realSubs));
+        }
+        return realSubs;
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return [];
+}
+
+function saveGuestSubs(subs) {
+  localStorage.setItem('subtrack_guest_subs', JSON.stringify(subs));
+}
 
 export default function Subscriptions() {
-  const { user } = useAuth();
+  const { user, baseCurrency: ctxBaseCurrency } = useAuth();
   const [subscriptions, setSubscriptions] = useState([]);
   const [priceIncreases, setPriceIncreases] = useState([]);
   const [error, setError] = useState('');
@@ -37,7 +62,7 @@ export default function Subscriptions() {
   const [historySub, setHistorySub] = useState(null);
   const [guideSub, setGuideSub] = useState(null);
 
-  const baseCurrency = user?.baseCurrency || 'USD';
+  const baseCurrency = user?.baseCurrency || ctxBaseCurrency || 'USD';
 
   // Search, Filter & Sort States
   const [searchTerm, setSearchTerm] = useState('');
@@ -64,8 +89,11 @@ export default function Subscriptions() {
 
       setSubscriptions(enriched);
       setPriceIncreases(summary?.recentPriceIncreases || []);
-    } catch (err) {
-      setError(err.message);
+      setError('');
+    } catch {
+      // Fallback to guest subscriptions when unauthenticated or offline
+      setSubscriptions(getGuestSubs());
+      setError('');
     }
   }
 
@@ -82,13 +110,32 @@ export default function Subscriptions() {
   }, [baseCurrency]);
 
   async function handleCreate(data) {
-    await api.createSubscription(data);
+    try {
+      await api.createSubscription(data);
+    } catch {
+      const guestSubs = getGuestSubs();
+      const newSub = {
+        ...data,
+        id: 'guest-' + Date.now(),
+        amount: Number(data.amount),
+        status: data.status || 'active',
+        convertedAmount: Number(data.amount),
+      };
+      saveGuestSubs([newSub, ...guestSubs]);
+    }
     setShowForm(false);
     refresh();
   }
 
   async function handleUpdate(data) {
-    await api.updateSubscription(editing.id, data);
+    try {
+      await api.updateSubscription(editing.id, data);
+    } catch {
+      const guestSubs = getGuestSubs().map((s) =>
+        s.id === editing.id ? { ...s, ...data, amount: Number(data.amount) } : s
+      );
+      saveGuestSubs(guestSubs);
+    }
     setEditing(null);
     refresh();
   }
@@ -96,15 +143,30 @@ export default function Subscriptions() {
   async function handleConvertTrial(subscription) {
     try {
       await api.convertTrial(subscription.id);
-      refresh();
-    } catch (err) {
-      setError(err.message);
+    } catch {
+      const guestSubs = getGuestSubs().map((s) =>
+        s.id === subscription.id ? { ...s, isFreeTrial: false } : s
+      );
+      saveGuestSubs(guestSubs);
     }
+    refresh();
   }
 
   async function handleConfirmPayment(paymentData) {
     if (!payingSub) return;
-    await api.confirmPayment(payingSub.id, paymentData);
+    try {
+      await api.confirmPayment(payingSub.id, paymentData);
+    } catch {
+      const guestSubs = getGuestSubs().map((s) => {
+        if (s.id === payingSub.id) {
+          const next = new Date(s.nextRenewalDate);
+          next.setMonth(next.getMonth() + 1);
+          return { ...s, nextRenewalDate: next.toISOString().slice(0, 10) };
+        }
+        return s;
+      });
+      saveGuestSubs(guestSubs);
+    }
     setPayingSub(null);
     refresh();
   }
@@ -127,15 +189,23 @@ export default function Subscriptions() {
         postTrialAmount: subscription.postTrialAmount !== null && subscription.postTrialAmount !== undefined ? Number(subscription.postTrialAmount) : null,
         postTrialCurrency: subscription.postTrialCurrency || subscription.currency,
       });
-      refresh();
-    } catch (err) {
-      setError(err.message);
+    } catch {
+      const guestSubs = getGuestSubs().map((s) =>
+        s.id === subscription.id ? { ...s, status: newStatus } : s
+      );
+      saveGuestSubs(guestSubs);
     }
+    refresh();
   }
 
   async function handleDelete(subscription) {
     if (!confirm(`Delete ${subscription.name}?`)) return;
-    await api.deleteSubscription(subscription.id);
+    try {
+      await api.deleteSubscription(subscription.id);
+    } catch {
+      const guestSubs = getGuestSubs().filter((s) => s.id !== subscription.id);
+      saveGuestSubs(guestSubs);
+    }
     refresh();
   }
 
@@ -260,12 +330,14 @@ export default function Subscriptions() {
             <span>Upload Receipt</span>
           </button>
 
-          <button
-            onClick={() => setShowForm(true)}
-            className="rounded-sm bg-ledger px-4 py-2 text-sm font-medium text-white shadow-2xs hover:bg-ledger-dark transition-colors cursor-pointer"
-          >
-            + Add subscription
-          </button>
+          {subscriptions.length > 0 && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="rounded-sm bg-ledger px-4 py-2 text-sm font-medium text-white shadow-2xs hover:bg-ledger-dark transition-colors cursor-pointer"
+            >
+              + Add subscription
+            </button>
+          )}
         </div>
       </div>
 
@@ -456,7 +528,15 @@ export default function Subscriptions() {
       {/* Subscription List */}
       <div className="border border-t-0 border-line bg-white px-4">
         {filteredSubscriptions.length === 0 && (
-          <div className="py-12 text-center">
+          <div className="py-14 text-center flex flex-col items-center justify-center">
+            {subscriptions.length === 0 && (
+              <button
+                onClick={() => setShowForm(true)}
+                className="mb-4 inline-flex items-center gap-2 rounded-sm bg-ledger px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-ledger-dark transition-all transform hover:-translate-y-0.5 cursor-pointer"
+              >
+                + Add subscription
+              </button>
+            )}
             <p className="text-sm font-medium text-ink/70">No subscriptions found</p>
             <p className="mt-1 text-xs text-ink/40">
               {hasActiveFilters

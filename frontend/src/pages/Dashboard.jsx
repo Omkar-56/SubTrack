@@ -10,20 +10,109 @@ import PaymentConfirmModal from '../components/PaymentConfirmModal';
 import CancellationGuideModal from '../components/CancellationGuideModal';
 import { formatDate, formatMoney, daysUntil } from '../utils/date';
 
+function computeGuestSummary(currency) {
+  let subs = [];
+  try {
+    const parsed = JSON.parse(localStorage.getItem('subtrack_guest_subs') || '[]');
+    if (Array.isArray(parsed)) {
+      subs = parsed.filter((s) => !(typeof s.id === 'string' && s.id.startsWith('demo-')));
+    }
+  } catch {
+    subs = [];
+  }
+
+  const activeSubs = subs.filter((s) => s.status === 'active' && !s.isFreeTrial);
+  const monthlyTotal = activeSubs.reduce((acc, s) => {
+    const cycle = s.billingCycle || 'monthly';
+    const factor = cycle === 'yearly' ? 1 / 12 : cycle === 'quarterly' ? 1 / 3 : cycle === 'weekly' ? 52 / 12 : 1;
+    return acc + (Number(s.amount) || 0) * factor;
+  }, 0);
+
+  const activeTrials = subs.filter((s) => s.isFreeTrial && s.status === 'active').map((t) => ({
+    ...t,
+    effectiveDeadline: t.cancellationDeadline || t.trialEndDate || t.nextRenewalDate,
+    daysLeft: 0,
+  }));
+
+  const byCategory = {};
+  activeSubs.forEach((s) => {
+    const cat = s.category || 'other';
+    byCategory[cat] = (byCategory[cat] || 0) + (Number(s.amount) || 0);
+  });
+  const categoryBreakdown = Object.entries(byCategory).map(([category, amount]) => ({
+    category,
+    amount,
+    percentage: monthlyTotal > 0 ? Math.round((amount / monthlyTotal) * 100) : 0,
+  }));
+
+  return {
+    baseCurrency: currency,
+    monthlyCommitment: monthlyTotal,
+    yearlyRunRate: monthlyTotal * 12,
+    activeCount: activeSubs.length,
+    activeTrials,
+    pendingReminders: [],
+    recentPriceIncreases: [],
+    upcomingRenewals: activeSubs.slice(0, 3).map((s) => ({
+      ...s,
+      daysLeft: 0,
+      convertedAmount: Number(s.amount),
+    })),
+    categoryBreakdown,
+    savings: {
+      monthlySaved: 0,
+      yearlySaved: 0,
+      cancelledCount: 0,
+      pausedCount: 0,
+    },
+  };
+}
+
+function computeGuestForecast(currency) {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const now = new Date();
+  const timeline = [];
+  for (let i = 0; i < 12; i++) {
+    const m = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    timeline.push({
+      month: months[m.getMonth()] + ' ' + m.getFullYear().toString().slice(2),
+      projectedSpend: 0,
+    });
+  }
+  return {
+    baseCurrency: currency,
+    forecast: timeline,
+  };
+}
+
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, baseCurrency: ctxBaseCurrency } = useAuth();
   const [summary, setSummary] = useState(null);
   const [forecast, setForecast] = useState(null);
   const [payingSub, setPayingSub] = useState(null);
   const [guideSub, setGuideSub] = useState(null);
   const [error, setError] = useState('');
 
-  const currentCurrency = user?.baseCurrency || 'USD';
+  const currentCurrency = user?.baseCurrency || ctxBaseCurrency || 'USD';
 
   function refresh() {
-    if (!user) return;
-    api.dashboardSummary(14, currentCurrency).then(setSummary).catch((err) => setError(err.message));
-    api.dashboardForecast(12, currentCurrency).then(setForecast).catch((err) => setError(err.message));
+    api.dashboardSummary(14, currentCurrency)
+      .then((data) => {
+        setSummary(data);
+        setError('');
+      })
+      .catch(() => {
+        setSummary(computeGuestSummary(currentCurrency));
+        setError('');
+      });
+
+    api.dashboardForecast(12, currentCurrency)
+      .then((data) => {
+        setForecast(data);
+      })
+      .catch(() => {
+        setForecast(computeGuestForecast(currentCurrency));
+      });
   }
 
   useEffect(() => {
