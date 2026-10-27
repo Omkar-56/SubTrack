@@ -1,15 +1,33 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
 import Landing from './pages/Landing';
-import Login from './pages/Login';
-import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Subscriptions from './pages/Subscriptions';
+import AuthModal from './components/AuthModal';
+
+function AuthRouteHandler({ mode }) {
+  const { user, setAuthModal } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard', { replace: true });
+    } else {
+      setAuthModal(mode);
+      const returnTo = location.state?.from || '/';
+      navigate(returnTo, { replace: true });
+    }
+  }, [user, mode, setAuthModal, navigate, location]);
+
+  return null;
+}
 
 export default function App() {
-  const { user, loading } = useAuth();
+  const { user, loading, authModal, closeAuthModal } = useAuth();
 
   if (loading) {
     return (
@@ -33,31 +51,9 @@ export default function App() {
           }
         />
 
-        {/* Standard container for Auth & App pages with uniform padding matching landing section */}
-        <Route
-          path="/login"
-          element={
-            user ? (
-              <Navigate to="/subscriptions" replace />
-            ) : (
-              <main className="mx-auto max-w-[1440px] w-full px-6 sm:px-10 lg:px-14 py-10">
-                <Login />
-              </main>
-            )
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            user ? (
-              <Navigate to="/subscriptions" replace />
-            ) : (
-              <main className="mx-auto max-w-[1440px] w-full px-6 sm:px-10 lg:px-14 py-10">
-                <Register />
-              </main>
-            )
-          }
-        />
+        {/* /login & /register open the popup card on the same page instead of a separate page */}
+        <Route path="/login" element={<AuthRouteHandler mode="login" />} />
+        <Route path="/register" element={<AuthRouteHandler mode="register" />} />
 
         <Route
           path="/dashboard"
@@ -83,6 +79,13 @@ export default function App() {
         {/* Catch-all fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+
+      {/* Global Auth Modal Popup Card */}
+      <AuthModal
+        isOpen={Boolean(authModal)}
+        initialMode={authModal || 'login'}
+        onClose={closeAuthModal}
+      />
     </div>
   );
 }

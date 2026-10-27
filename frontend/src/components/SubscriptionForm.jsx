@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import BrandLogo from './BrandLogo';
 import { VALID_CATEGORIES, formatCategoryLabel, normalizeCategory } from '../utils/brands';
@@ -25,8 +24,7 @@ const emptyForm = {
 };
 
 export default function SubscriptionForm({ initial, defaultCurrency = 'USD', onSubmit, onCancel }) {
-  const { user } = useAuth();
-  const navigate = useNavigate();
+  const { user, openRegister } = useAuth();
   const [form, setForm] = useState(() => {
     if (!initial) {
       return {
@@ -87,10 +85,10 @@ export default function SubscriptionForm({ initial, defaultCurrency = 'USD', onS
         nextRenewalDate: form.isFreeTrial && trialEnd ? trialEnd : form.nextRenewalDate,
       };
 
+      // If user is not authenticated, open registration popup card and keep form intact in background
       if (!user) {
-        sessionStorage.setItem('subtrack_pending_subscription', JSON.stringify(payload));
-        if (onCancel) onCancel();
-        navigate('/register');
+        openRegister();
+        setSubmitting(false);
         return;
       }
 
