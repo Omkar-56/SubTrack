@@ -1,5 +1,7 @@
+'use client';
+
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import StatCard from '../components/StatCard';
@@ -201,7 +203,7 @@ export default function Dashboard() {
             </div>
 
             <Link
-              to="/subscriptions"
+              href="/subscriptions"
               className="text-xs font-semibold text-amber-dark hover:underline flex items-center gap-1"
             >
               <span>Manage all trials</span>
@@ -390,7 +392,7 @@ export default function Dashboard() {
         <section className="lg:col-span-4">
           <div className="flex items-baseline justify-between">
             <h2 className="font-display text-lg sm:text-xl font-semibold">Renewing soon</h2>
-            <Link to="/subscriptions" className="text-xs sm:text-sm text-ledger hover:underline font-medium">
+            <Link href="/subscriptions" className="text-xs sm:text-sm text-ledger hover:underline font-medium">
               See all →
             </Link>
           </div>

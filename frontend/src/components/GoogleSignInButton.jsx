@@ -1,22 +1,24 @@
+'use client';
+
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 
 export default function GoogleSignInButton({ text = 'signin_with', onSuccess, onError }) {
   const { loginWithGoogle } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
   const btnContainerRef = useRef(null);
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [clientId, setClientId] = useState('');
 
   useEffect(() => {
     const gClientId =
-      import.meta.env.VITE_GOOGLE_CLIENT_ID ||
-      window.__GOOGLE_CLIENT_ID__ ||
+      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+      (typeof window !== 'undefined' ? window.__GOOGLE_CLIENT_ID__ : '') ||
       '';
     setClientId(gClientId);
 
-    if (window.google?.accounts?.id) {
+    if (typeof window !== 'undefined' && window.google?.accounts?.id) {
       setScriptLoaded(true);
       return;
     }
@@ -40,7 +42,7 @@ export default function GoogleSignInButton({ text = 'signin_with', onSuccess, on
   }, [onError]);
 
   useEffect(() => {
-    if (!scriptLoaded || !window.google?.accounts?.id || !clientId || !btnContainerRef.current) {
+    if (!scriptLoaded || typeof window === 'undefined' || !window.google?.accounts?.id || !clientId || !btnContainerRef.current) {
       return;
     }
 
@@ -50,7 +52,7 @@ export default function GoogleSignInButton({ text = 'signin_with', onSuccess, on
         if (onSuccess) {
           onSuccess();
         } else {
-          navigate('/dashboard');
+          router.push('/dashboard');
         }
       } catch (err) {
         if (onError) onError(err.message || 'Google sign-in failed');
@@ -79,7 +81,7 @@ export default function GoogleSignInButton({ text = 'signin_with', onSuccess, on
     } catch (err) {
       console.error('Google button init error:', err);
     }
-  }, [scriptLoaded, clientId, text, loginWithGoogle, navigate, onSuccess, onError]);
+  }, [scriptLoaded, clientId, text, loginWithGoogle, router, onSuccess, onError]);
 
   if (!clientId) {
     return (
@@ -87,7 +89,7 @@ export default function GoogleSignInButton({ text = 'signin_with', onSuccess, on
         type="button"
         onClick={() => {
           const promptClientId = window.prompt(
-            'To enable Google Sign-In, please set VITE_GOOGLE_CLIENT_ID in your frontend .env file.\n\nOr enter your Google Client ID here to test immediately:'
+            'To enable Google Sign-In, please set NEXT_PUBLIC_GOOGLE_CLIENT_ID in your frontend .env file.\n\nOr enter your Google Client ID here to test immediately:'
           );
           if (promptClientId && promptClientId.trim()) {
             window.__GOOGLE_CLIENT_ID__ = promptClientId.trim();

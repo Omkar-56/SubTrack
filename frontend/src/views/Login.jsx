@@ -1,12 +1,15 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import GoogleSignInButton from '../components/GoogleSignInButton';
 
 export default function Login() {
   const { login } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -19,7 +22,7 @@ export default function Login() {
     try {
       await login(email, password);
 
-      const pending = sessionStorage.getItem('subtrack_pending_subscription');
+      const pending = typeof window !== 'undefined' ? sessionStorage.getItem('subtrack_pending_subscription') : null;
       if (pending) {
         try {
           await api.createSubscription(JSON.parse(pending));
@@ -29,7 +32,7 @@ export default function Login() {
         }
       }
 
-      navigate('/subscriptions');
+      router.push('/subscriptions');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -48,7 +51,7 @@ export default function Login() {
           Log In
         </button>
         <Link
-          to="/register"
+          href="/register"
           className="flex-1 rounded-xs py-1.5 text-ink/50 hover:text-ink text-center transition-colors"
         >
           Sign Up
@@ -104,7 +107,7 @@ export default function Login() {
       </form>
 
       <p className="mt-6 text-sm text-ink/60">
-        New here? <Link to="/register" className="text-ledger hover:underline">Create an account</Link>
+        New here? <Link href="/register" className="text-ledger hover:underline">Create an account</Link>
       </p>
     </div>
   );

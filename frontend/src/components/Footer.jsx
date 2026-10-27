@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 
 const PRODUCT_LINKS = [
   { label: 'Overview' },
@@ -8,8 +8,8 @@ const PRODUCT_LINKS = [
 ];
 
 const LEGAL_LINKS = [
-  { label: 'Privacy Policy', to: '/privacy-policy' },
-  { label: 'Terms of Service', to: '/terms-of-service' },
+  { label: 'Privacy Policy', href: '/privacy-policy' },
+  { label: 'Terms of Service', href: '/terms-of-service' },
 ];
 
 export default function Footer() {
@@ -21,7 +21,7 @@ export default function Footer() {
 
           {/* Brand column */}
           <div className="lg:col-span-5 space-y-4">
-            <Link to="/" className="flex items-center gap-2 sm:gap-2.5 transition-opacity hover:opacity-90">
+            <Link href="/" className="flex items-center gap-2 sm:gap-2.5 transition-opacity hover:opacity-90">
               {/* Invert logos so they show white on the dark green bg */}
               <img
                 src="/logo/logo.svg"
@@ -68,7 +68,7 @@ export default function Footer() {
                 {LEGAL_LINKS.map((item) => (
                   <li key={item.label}>
                     <Link
-                      to={item.to}
+                      href={item.href}
                       className="text-sm text-white/55 hover:text-white transition-colors duration-150"
                     >
                       {item.label}

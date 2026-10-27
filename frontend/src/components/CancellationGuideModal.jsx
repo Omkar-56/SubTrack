@@ -1,3 +1,5 @@
+'use client';
+
 import { getCancellationGuide } from '../utils/cancellationGuides';
 import BrandLogo from './BrandLogo';
 import { formatMoney, formatDate } from '../utils/date';

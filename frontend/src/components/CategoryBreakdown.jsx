@@ -1,3 +1,5 @@
+'use client';
+
 import { useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { formatMoney } from '../utils/date';

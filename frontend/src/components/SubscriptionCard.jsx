@@ -1,3 +1,5 @@
+'use client';
+
 import BrandLogo from './BrandLogo';
 import { formatDate, formatMoney, daysUntil } from '../utils/date';
 import { formatCategoryLabel } from '../utils/brands';

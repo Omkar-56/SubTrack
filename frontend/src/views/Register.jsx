@@ -1,12 +1,15 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+'use client';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import GoogleSignInButton from '../components/GoogleSignInButton';
 
 export default function Register() {
   const { register } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,7 +23,7 @@ export default function Register() {
     try {
       await register(name, email, password);
 
-      const pending = sessionStorage.getItem('subtrack_pending_subscription');
+      const pending = typeof window !== 'undefined' ? sessionStorage.getItem('subtrack_pending_subscription') : null;
       if (pending) {
         try {
           await api.createSubscription(JSON.parse(pending));
@@ -30,7 +33,7 @@ export default function Register() {
         }
       }
 
-      navigate('/subscriptions');
+      router.push('/subscriptions');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -43,7 +46,7 @@ export default function Register() {
       {/* Mode switcher tabs */}
       <div className="flex rounded-sm bg-stone-100 p-1 mb-6 text-xs font-semibold">
         <Link
-          to="/login"
+          href="/login"
           className="flex-1 rounded-xs py-1.5 text-ink/50 hover:text-ink text-center transition-colors"
         >
           Log In
@@ -116,7 +119,7 @@ export default function Register() {
       </form>
 
       <p className="mt-6 text-sm text-ink/60">
-        Already have an account? <Link to="/login" className="text-ledger hover:underline">Sign in</Link>
+        Already have an account? <Link href="/login" className="text-ledger hover:underline">Sign in</Link>
       </p>
     </div>
   );

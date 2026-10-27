@@ -1,3 +1,5 @@
+'use client';
+
 export default function StatCard({ label, value, sublabel, tone = 'default' }) {
   const toneClass = {
     default: 'text-ink',

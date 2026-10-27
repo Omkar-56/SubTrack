@@ -77,11 +77,11 @@ All protected endpoints require a JWT token passed in the `Authorization: Bearer
 
 ## Tech Stack
 
-- **Frontend**: React 18, Vite, Tailwind CSS, Recharts
+- **Frontend**: React 18, Next.js, Tailwind CSS, Recharts
 - **Backend**: Node.js, Express, PostgreSQL, JWT Authentication
 - **AI Integration**: Google Gemini API
 - **Email Service**: Nodemailer (Gmail SMTP)
-- **Deployment**: Vercel ready (Serverless & Static Hosting)
+- **Deployment**: Vercel ready (Next.js & Serverless API)
 
 ---
 
@@ -100,5 +100,5 @@ npm run dev              # Runs on http://localhost:4000
 ```bash
 cd frontend
 npm install
-npm run dev              # Runs on http://localhost:5173
+npm run dev              # Runs on http://localhost:3000
 ```

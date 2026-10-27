@@ -1,6 +1,7 @@
 const BASE_URL = '/api';
 
 function getToken() {
+  if (typeof window === 'undefined') return null;
   return localStorage.getItem('subtrack_token');
 }
 

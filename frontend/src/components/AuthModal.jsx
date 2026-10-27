@@ -1,13 +1,15 @@
-﻿import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import GoogleSignInButton from './GoogleSignInButton';
 
 export default function AuthModal({ isOpen, initialMode = 'login', onClose }) {
   const [mode, setMode] = useState(initialMode); // 'login' | 'register'
   const { login, register } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const router = useRouter();
+  const pathname = usePathname();
 
   // Form states
   const [name, setName] = useState('');
@@ -56,8 +58,8 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose }) {
     onClose();
     // Only navigate to dashboard if currently on the landing page '/'
     // If on /subscriptions, /dashboard, etc., stay on current page so the user continues their workflow
-    if (location.pathname === '/') {
-      navigate('/dashboard');
+    if (pathname === '/') {
+      router.push('/dashboard');
     }
   }
 

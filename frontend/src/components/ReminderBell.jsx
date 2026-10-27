@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, useRef } from 'react';
 import { api } from '../api/client';
 import BrandLogo from './BrandLogo';

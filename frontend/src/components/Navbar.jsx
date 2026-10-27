@@ -1,5 +1,8 @@
+'use client';
+
 import { useState, useEffect } from 'react';
-import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
+import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import ReminderBell from './ReminderBell';
 import PaymentConfirmModal from './PaymentConfirmModal';
@@ -19,18 +22,20 @@ const CURRENCIES = [
   { code: 'BRL', label: 'R$ BRL' },
 ];
 
-const linkClass = ({ isActive }) =>
-  `px-1 pb-1 border-b-2 text-sm transition-colors ${
-    isActive ? 'border-ledger text-ink font-medium' : 'border-transparent text-ink/50 hover:text-ink'
-  }`;
-
 export default function Navbar() {
   const { user, baseCurrency, setBaseCurrency, logout, openLogin, openRegister } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const router = useRouter();
+  const pathname = usePathname();
   const [payingSub, setPayingSub] = useState(null);
   const [guideSub, setGuideSub] = useState(null);
   const [isScrolled, setIsScrolled] = useState(false);
+
+  const getLinkClass = (path, exact = false) => {
+    const isActive = exact ? pathname === path : pathname === path || (pathname && pathname.startsWith(path + '/'));
+    return `px-1 pb-1 border-b-2 text-sm transition-colors ${
+      isActive ? 'border-ledger text-ink font-medium' : 'border-transparent text-ink/50 hover:text-ink'
+    }`;
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -42,7 +47,7 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const isLandingPage = !user && location.pathname === '/';
+  const isLandingPage = !user && pathname === '/';
 
   async function handleConfirmPayment(paymentData) {
     if (!payingSub) return;
@@ -87,7 +92,7 @@ export default function Navbar() {
       >
         <div className="relative mx-auto flex items-center justify-between px-6 sm:px-10 lg:px-14 py-5 sm:py-6 max-w-[1440px] w-full">
           <div className="flex items-center">
-            <NavLink to={user ? '/subscriptions' : '/'} className="flex items-center gap-2 sm:gap-2.5 transition-opacity hover:opacity-90">
+            <Link href={user ? '/subscriptions' : '/'} className="flex items-center gap-2 sm:gap-2.5 transition-opacity hover:opacity-90">
               <img
                 src="/logo/logo.svg"
                 alt="SubTrack"
@@ -98,14 +103,14 @@ export default function Navbar() {
                 alt="SubTrack"
                 className="h-7 w-auto object-contain"
               />
-            </NavLink>
+            </Link>
           </div>
 
           {/* Centered Navigation: Home, Subscriptions & Overview */}
           <nav className="flex items-center gap-6 sm:gap-8 absolute left-1/2 -translate-x-1/2">
-            <NavLink to="/" end className={linkClass}>Home</NavLink>
-            <NavLink to="/subscriptions" className={linkClass}>Subscriptions</NavLink>
-            <NavLink to="/dashboard" className={linkClass}>Overview</NavLink>
+            <Link href="/" className={getLinkClass('/', true)}>Home</Link>
+            <Link href="/subscriptions" className={getLinkClass('/subscriptions')}>Subscriptions</Link>
+            <Link href="/dashboard" className={getLinkClass('/dashboard')}>Overview</Link>
           </nav>
 
           {user ? (
@@ -150,7 +155,7 @@ export default function Navbar() {
               <button
                 onClick={() => {
                   logout();
-                  navigate('/');
+                  router.push('/');
                 }}
                 className="text-xs text-ink/60 hover:text-rust transition-colors cursor-pointer"
               >

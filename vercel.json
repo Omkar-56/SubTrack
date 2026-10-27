@@ -1,6 +1,5 @@
 {
   "buildCommand": "npm run build --workspace=frontend",
-  "outputDirectory": "frontend/dist",
   "crons": [
     {
       "path": "/api/reminders/cron",
@@ -15,10 +14,6 @@
     {
       "source": "/api",
       "destination": "/api"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
     }
   ]
 }

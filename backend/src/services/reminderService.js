@@ -75,7 +75,7 @@ export const reminderService = {
           ? `SubTrack Alert: ${sub.name} trial ends ${daysText}!`
           : `SubTrack Reminder: ${sub.name} is ${daysText} (${sub.currency} ${Number(sub.amount).toFixed(2)})`;
 
-        const appUrl = env.clientOrigin || 'http://localhost:5173';
+        const appUrl = env.clientOrigin || 'http://localhost:3000';
 
         const html = buildReminderEmailHtml({
           userName: sub.userName,
@@ -169,7 +169,7 @@ export const reminderService = {
     };
 
     const dueDateFormatted = sampleSub.nextRenewalDate ? String(sampleSub.nextRenewalDate).slice(0, 10) : 'in 2 days';
-    const appUrl = env.clientOrigin || 'http://localhost:5173';
+    const appUrl = env.clientOrigin || 'http://localhost:3000';
 
     const html = buildReminderEmailHtml({
       userName: user.name,

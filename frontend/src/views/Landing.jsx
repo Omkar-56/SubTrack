@@ -1,4 +1,6 @@
-import { Link } from 'react-router-dom';
+'use client';
+
+import Link from 'next/link';
 import BrandLogo from '../components/BrandLogo';
 import Footer from '../components/Footer';
 import { useAuth } from '../context/AuthContext';
@@ -69,7 +71,7 @@ export default function Landing() {
               {/* CTA Button */}
               <div className="pt-1 flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 <Link
-                  to="/subscriptions"
+                  href="/subscriptions"
                   className="inline-flex items-center justify-center gap-2 rounded-md bg-ledger px-6 py-3.5 text-sm font-semibold text-white shadow-md hover:bg-ledger-dark transition-all transform hover:-translate-y-0.5 cursor-pointer"
                 >
                   <span>Track Subscriptions</span>
@@ -181,7 +183,7 @@ export default function Landing() {
             <div className="pt-4 flex flex-wrap justify-center gap-4">
               {user ? (
                 <Link
-                  to="/subscriptions"
+                  href="/subscriptions"
                   className="rounded-sm bg-ledger px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-ledger-dark transition-all transform hover:-translate-y-0.5"
                 >
                   Get Started for Free →

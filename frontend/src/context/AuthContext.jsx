@@ -1,3 +1,5 @@
+'use client';
+
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { api } from '../api/client';
 
@@ -6,10 +8,15 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [guestCurrency, setGuestCurrency] = useState(
-    () => localStorage.getItem('subtrack_base_currency') || 'USD'
-  );
+  const [guestCurrency, setGuestCurrency] = useState('USD');
   const [authModal, setAuthModal] = useState(null); // null | 'login' | 'register'
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedCurrency = localStorage.getItem('subtrack_base_currency');
+      if (savedCurrency) setGuestCurrency(savedCurrency);
+    }
+  }, []);
 
   const openLogin = useCallback(() => setAuthModal('login'), []);
   const openRegister = useCallback(() => setAuthModal('register'), []);
