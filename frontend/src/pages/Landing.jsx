@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import BrandLogo from '../components/BrandLogo';
 import Footer from '../components/Footer';
+import { useAuth } from '../context/AuthContext';
 
 const FEATURES = [
   {
@@ -40,6 +41,8 @@ const SAMPLE_COMPANIES = [
 ];
 
 export default function Landing() {
+  const { user, openRegister } = useAuth();
+
   return (
     <div className="w-full space-y-24">
       {/*
@@ -121,7 +124,7 @@ export default function Landing() {
       </section>
 
       {/* Main Content Container for Below-Hero Sections */}
-      <div className="mx-auto max-w-[1440px] w-full px-6 sm:px-10 lg:px-14 space-y-24">
+      <div className="mx-auto max-w-6xl px-6 sm:px-8 space-y-24">
         {/* Brand Compatibility Strip */}
         <section className="text-center">
           <p className="font-display text-xs font-semibold uppercase tracking-wider text-ink/40">
@@ -140,7 +143,7 @@ export default function Landing() {
         {/* Feature Grid */}
         <section>
           <div className="text-center">
-            <h2 className="font-display text-2xl sm:text-3xl font-bold text-ink">
+            <h2 className="font-display text-2xl sm:text-3xl font-semibold text-ink">
               Engineered for complete subscription clarity
             </h2>
             <p className="mx-auto mt-2 max-w-xl text-sm text-ink/60">
@@ -152,7 +155,7 @@ export default function Landing() {
             {FEATURES.map((f, idx) => (
               <div
                 key={idx}
-                className="rounded-md border border-line bg-white p-6 shadow-2xs hover:shadow-xs transition-shadow flex flex-col justify-between"
+                className="rounded-sm border border-line bg-white p-6 shadow-2xs hover:shadow-xs transition-shadow flex flex-col justify-between"
               >
                 <div>
                   <div className="flex h-10 w-10 items-center justify-center rounded-sm bg-ledger-light text-xl">
@@ -167,21 +170,31 @@ export default function Landing() {
         </section>
 
         {/* Call to Action Footer Card */}
-        <section className="rounded-lg border border-line bg-ink text-white p-8 sm:p-12 text-center shadow-lg relative overflow-hidden">
+        <section className="rounded-sm border border-line bg-ink text-white p-8 sm:p-12 text-center shadow-lg relative overflow-hidden">
           <div className="relative z-10 max-w-2xl mx-auto space-y-4">
-            <h2 className="font-display text-3xl sm:text-4xl font-bold text-white">
+            <h2 className="font-display text-3xl sm:text-4xl font-semibold text-white">
               Ready to stop recurring subscription leaks?
             </h2>
             <p className="text-sm sm:text-base text-white/70">
               Set up your personal ledger in less than 2 minutes. Free and straightforward.
             </p>
             <div className="pt-4 flex flex-wrap justify-center gap-4">
-              <Link
-                to="/subscriptions"
-                className="rounded-sm bg-ledger px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-ledger-dark transition-all transform hover:-translate-y-0.5"
-              >
-                Get Started for Free →
-              </Link>
+              {user ? (
+                <Link
+                  to="/subscriptions"
+                  className="rounded-sm bg-ledger px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-ledger-dark transition-all transform hover:-translate-y-0.5"
+                >
+                  Get Started for Free →
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  onClick={openRegister}
+                  className="rounded-sm bg-ledger px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-ledger-dark transition-all transform hover:-translate-y-0.5 cursor-pointer"
+                >
+                  Get Started for Free →
+                </button>
+              )}
             </div>
           </div>
         </section>

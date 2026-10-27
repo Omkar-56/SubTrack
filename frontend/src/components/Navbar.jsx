@@ -25,7 +25,7 @@ const linkClass = ({ isActive }) =>
   }`;
 
 export default function Navbar() {
-  const { user, baseCurrency, setBaseCurrency, logout } = useAuth();
+  const { user, baseCurrency, setBaseCurrency, logout, openLogin, openRegister } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [payingSub, setPayingSub] = useState(null);
@@ -143,11 +143,14 @@ export default function Navbar() {
 
               <span className="hidden md:inline text-xs text-ink/40">|</span>
 
-              <span className="hidden md:inline text-xs text-ink/50">{user.email}</span>
+              {/* Show user's name (with email as tooltip fallback) */}
+              <span className="hidden md:inline text-xs font-medium text-ink/80 max-w-[160px] truncate" title={user.email}>
+                {user.name || user.email}
+              </span>
               <button
                 onClick={() => {
                   logout();
-                  navigate('/login');
+                  navigate('/');
                 }}
                 className="text-xs text-ink/60 hover:text-rust transition-colors cursor-pointer"
               >
@@ -180,18 +183,20 @@ export default function Navbar() {
                 </svg>
               </div>
 
-              <Link
-                to="/login"
-                className="text-xs font-semibold text-ink/70 hover:text-ink transition-colors"
+              <button
+                type="button"
+                onClick={openLogin}
+                className="text-xs font-semibold text-ink/70 hover:text-ink transition-colors cursor-pointer"
               >
                 Log In
-              </Link>
-              <Link
-                to="/register"
-                className="rounded-sm bg-ledger px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-ledger-dark transition-colors"
+              </button>
+              <button
+                type="button"
+                onClick={openRegister}
+                className="rounded-sm bg-ledger px-4 py-2 text-xs font-semibold text-white shadow-2xs hover:bg-ledger-dark transition-colors cursor-pointer"
               >
                 Sign Up
-              </Link>
+              </button>
             </div>
           )}
         </div>
