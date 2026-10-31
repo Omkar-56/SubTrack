@@ -218,7 +218,7 @@ export default function Dashboard() {
               return (
                 <div
                   key={t.id}
-                  className="flex items-center justify-between rounded bg-white/90 border border-amber/30 p-3 shadow-2xs hover:bg-white transition-colors gap-3"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between rounded bg-white/90 border border-amber/30 p-3 shadow-2xs hover:bg-white transition-colors gap-3"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
                     <BrandLogo name={t.name} category={t.category} size="sm" />
@@ -242,7 +242,7 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
                     <button
                       onClick={() => setGuideSub(t)}
                       className="rounded bg-rust px-2.5 py-1 text-xs font-semibold text-white shadow-2xs hover:bg-rust-dark transition-colors cursor-pointer"
@@ -282,7 +282,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 w-full sm:w-auto">
               {pendingReminders.slice(0, 2).map((r) => (
                 <button
                   key={r.id}
@@ -297,7 +297,7 @@ export default function Dashboard() {
                       nextRenewalDate: r.dueDate,
                     })
                   }
-                  className="rounded bg-white border border-ledger/40 px-3 py-1 text-xs font-medium text-ledger-dark hover:bg-ledger hover:text-white transition-colors shadow-2xs cursor-pointer"
+                  className="rounded bg-white border border-ledger/40 px-3 py-1.5 sm:py-1 text-xs font-medium text-ledger-dark hover:bg-ledger hover:text-white transition-colors shadow-2xs cursor-pointer text-left sm:text-center"
                 >
                   ✓ Confirm {r.subscriptionName} ({formatMoney(r.amount, r.currency)})
                 </button>

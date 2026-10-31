@@ -69,7 +69,7 @@ export default function TrendChart({
   return (
     <div className="mt-3 border border-line bg-white p-4 shadow-2xs">
       {/* KPI strip */}
-      <div className="flex flex-wrap items-baseline justify-between gap-4 border-b border-line pb-3">
+      <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-baseline justify-between gap-3 sm:gap-4 border-b border-line pb-3">
         <div>
           <span className="text-xs text-ink/50">Average monthly</span>
           <p className="tabular font-display text-lg font-semibold text-ink">

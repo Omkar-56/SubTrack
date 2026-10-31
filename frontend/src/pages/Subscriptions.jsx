@@ -318,10 +318,10 @@ export default function Subscriptions() {
             Everything you're paying for or trialing, in one searchable ledger.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
           <button
             onClick={() => setShowReceiptParser(true)}
-            className="flex items-center gap-2 rounded-sm border border-line bg-white px-3.5 py-2 text-sm font-medium text-ink shadow-2xs hover:bg-stone-50 transition-colors cursor-pointer"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-sm border border-line bg-white px-3 sm:px-3.5 py-2 text-xs sm:text-sm font-medium text-ink shadow-2xs hover:bg-stone-50 transition-colors cursor-pointer"
             title="Upload invoice, document, screenshot, or paste text to auto-create subscriptions with Gemini"
           >
             <svg className="h-4 w-4 text-ink/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -333,7 +333,7 @@ export default function Subscriptions() {
           {subscriptions.length > 0 && (
             <button
               onClick={() => setShowForm(true)}
-              className="rounded-sm bg-ledger px-4 py-2 text-sm font-medium text-white shadow-2xs hover:bg-ledger-dark transition-colors cursor-pointer"
+              className="flex-1 sm:flex-initial rounded-sm bg-ledger px-3.5 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white shadow-2xs hover:bg-ledger-dark transition-colors cursor-pointer text-center"
             >
               + Add subscription
             </button>
@@ -384,11 +384,12 @@ export default function Subscriptions() {
       )}
 
       {/* Filter & Search Bar */}
-      <div className="space-y-3 rounded-t border border-line bg-white p-4 shadow-2xs">
+      <div className="space-y-3 rounded-t border border-line bg-white p-3.5 sm:p-4 shadow-2xs">
         {/* Top Row: Search & Status Tabs */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {/* Status Tabs including Free Trials */}
-          <div className="inline-flex rounded-sm bg-paper p-0.5 text-xs font-medium border border-line">
+          <div className="max-w-full overflow-x-auto pb-1 sm:pb-0">
+            <div className="inline-flex rounded-sm bg-paper p-0.5 text-xs font-medium border border-line whitespace-nowrap">
             {[
               { id: 'all', label: 'All', count: counts.all },
               { id: 'active', label: 'Active Paid', count: counts.active },
@@ -399,7 +400,7 @@ export default function Subscriptions() {
               <button
                 key={tab.id}
                 onClick={() => setStatusFilter(tab.id)}
-                className={`flex items-center gap-1.5 rounded-xs px-3 py-1.5 transition-all cursor-pointer ${
+                className={`shrink-0 flex items-center gap-1.5 rounded-xs px-2.5 sm:px-3 py-1.5 transition-all cursor-pointer ${
                   statusFilter === tab.id
                     ? 'bg-white text-ink shadow-2xs font-semibold'
                     : 'text-ink/60 hover:text-ink'
@@ -419,10 +420,11 @@ export default function Subscriptions() {
                 </span>
               </button>
             ))}
+            </div>
           </div>
 
           {/* Search Input */}
-          <div className="relative min-w-[220px] flex-1 sm:max-w-xs">
+          <div className="relative w-full sm:max-w-xs sm:flex-1">
             <input
               type="text"
               placeholder="Search by name, category, notes…"
@@ -455,8 +457,8 @@ export default function Subscriptions() {
         </div>
 
         {/* Bottom Row: Category, Cycle, Sort & Reset */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-line/60 text-xs">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-line/60 text-xs">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
             {/* Category Filter */}
             <select
               value={categoryFilter}
@@ -485,12 +487,12 @@ export default function Subscriptions() {
             </select>
 
             {/* Sort Dropdown */}
-            <div className="flex items-center gap-1.5 text-ink/60">
+            <div className="col-span-2 sm:col-span-1 flex items-center gap-1.5 text-ink/60">
               <span className="hidden sm:inline">Sort:</span>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="rounded-sm border border-line bg-paper/30 px-2.5 py-1 text-ink outline-none hover:border-line focus:border-ledger cursor-pointer"
+                className="w-full sm:w-auto rounded-sm border border-line bg-paper/30 px-2.5 py-1 text-ink outline-none hover:border-line focus:border-ledger cursor-pointer"
               >
                 <option value="renewal_asc">Next renewal / deadline (soonest)</option>
                 <option value="renewal_desc">Next renewal / deadline (furthest)</option>
@@ -503,8 +505,8 @@ export default function Subscriptions() {
           </div>
 
           {/* Quick Summary and Reset Button */}
-          <div className="flex items-center gap-3">
-            <span className="text-ink/60">
+          <div className="flex items-center justify-between sm:justify-start gap-3 pt-1 sm:pt-0 border-t border-line/40 sm:border-0">
+            <span className="text-ink/60 text-[11px] sm:text-xs">
               Showing <strong className="text-ink">{filteredSubscriptions.length}</strong> of{' '}
               {subscriptions.length} (
               <span className="tabular font-medium text-ledger-dark">

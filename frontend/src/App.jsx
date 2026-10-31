@@ -59,7 +59,7 @@ export default function App() {
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <main className="mx-auto max-w-[1440px] w-full px-6 sm:px-10 lg:px-14 py-8">
+              <main className="mx-auto max-w-[1440px] w-full px-4 sm:px-10 lg:px-14 py-5 sm:py-8">
                 <Dashboard />
               </main>
             </ProtectedRoute>
@@ -69,7 +69,7 @@ export default function App() {
           path="/subscriptions"
           element={
             <ProtectedRoute>
-              <main className="mx-auto max-w-[1440px] w-full px-6 sm:px-10 lg:px-14 py-8">
+              <main className="mx-auto max-w-[1440px] w-full px-4 sm:px-10 lg:px-14 py-5 sm:py-8">
                 <Subscriptions />
               </main>
             </ProtectedRoute>

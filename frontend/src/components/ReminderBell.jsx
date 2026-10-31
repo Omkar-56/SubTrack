@@ -84,7 +84,7 @@ export default function ReminderBell({ onConfirmPayment, onCancelGuide, onConver
 
       {/* Popover Dropdown */}
       {open && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-md border border-line bg-white shadow-xl z-50 animate-in fade-in zoom-in-95 duration-100">
+        <div className="fixed sm:absolute right-2 sm:right-0 top-14 sm:top-auto mt-1 sm:mt-2 w-[calc(100vw-1rem)] sm:w-96 max-w-sm rounded-md border border-line bg-white shadow-xl z-50 animate-in fade-in zoom-in-95 duration-100">
           <div className="flex items-center justify-between border-b border-line px-4 py-3 bg-paper/30">
             <div className="flex items-center gap-2">
               <span className="font-display text-sm font-semibold text-ink">

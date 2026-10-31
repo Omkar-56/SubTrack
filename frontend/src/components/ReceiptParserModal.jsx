@@ -179,7 +179,7 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-ink/40 backdrop-blur-xs transition-opacity"
@@ -189,9 +189,9 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
       />
 
       {/* Modal Dialog */}
-      <div className="relative w-full max-w-lg rounded-md border border-line bg-white shadow-xl flex flex-col max-h-[90vh] z-10 animate-in fade-in zoom-in-95 duration-150">
+      <div className="relative w-full max-w-lg rounded-md border border-line bg-white shadow-xl flex flex-col max-h-[92vh] z-10 animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-line px-5 py-4">
+        <div className="flex items-center justify-between border-b border-line px-4 sm:px-5 py-3.5 sm:py-4">
           <div className="flex items-center gap-2.5">
             <span className="flex h-8 w-8 items-center justify-center rounded-md bg-stone-100 text-ink border border-line/60">
               <svg className="h-4 w-4 text-ink/75" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -217,7 +217,7 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
         </div>
 
         {/* Content Body */}
-        <div className="p-5 overflow-y-auto space-y-4">
+        <div className="p-4 sm:p-5 overflow-y-auto space-y-4">
           {/* Success State View */}
           {successResult ? (
             <div className="space-y-4 text-center py-2">
@@ -406,7 +406,7 @@ export default function ReceiptParserModal({ isOpen, onClose, onParsed }) {
 
         {/* Footer Actions */}
         {!successResult && (
-          <div className="border-t border-line px-5 py-3 flex items-center justify-end gap-2 bg-stone-50/50">
+          <div className="border-t border-line px-4 sm:px-5 py-3 flex items-center justify-end gap-2 bg-stone-50/50">
             <button
               type="button"
               onClick={onClose}

@@ -21,8 +21,8 @@ export default function PaymentHistoryModal({ subscription, onClose }) {
   if (!subscription) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-xs p-4">
-      <div className="w-full max-w-lg rounded-md border border-line bg-white p-6 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-xs p-3 sm:p-4">
+      <div className="w-full max-w-lg rounded-md border border-line bg-white p-4 sm:p-6 shadow-xl animate-in fade-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto">
         <div className="flex items-start justify-between gap-4 border-b border-line pb-4">
           <div className="flex items-center gap-3">
             <BrandLogo name={subscription.name} category={subscription.category} size="md" />

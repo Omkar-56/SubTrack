@@ -30,110 +30,133 @@ export default function SubscriptionCard({
   const isDifferentCurrency = baseCurrency && subscription.currency !== baseCurrency && subscription.convertedAmount;
 
   return (
-    <div className={`group flex items-center justify-between gap-4 border-b border-line px-2 py-3.5 transition-colors hover:bg-paper/40 last:border-b-0 ${isTrial ? 'bg-amber-light/10' : ''}`}>
-      <div className="flex min-w-0 items-center gap-3.5">
-        <BrandLogo name={subscription.name} category={subscription.category} size="md" />
+    <div
+      className={`group flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-line px-3 sm:px-2 py-3.5 transition-colors hover:bg-paper/40 last:border-b-0 ${
+        isTrial ? 'bg-amber-light/10' : ''
+      }`}
+    >
+      {/* Top / Main Info */}
+      <div className="flex items-start sm:items-center justify-between gap-3 min-w-0">
+        <div className="flex min-w-0 items-start sm:items-center gap-3">
+          <BrandLogo name={subscription.name} category={subscription.category} size="md" />
 
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <p className="truncate font-medium text-ink">{subscription.name}</p>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <p className="truncate font-medium text-ink text-sm sm:text-base">{subscription.name}</p>
 
-            {isTrial ? (
-              <span className="rounded bg-amber-light border border-amber/40 px-1.5 py-0.5 text-[11px] font-bold text-amber tracking-wide flex items-center gap-1">
-                <span>🛡️</span>
-                <span>TRIAL</span>
-              </span>
-            ) : (
-              <span className="rounded bg-stone-100 px-1.5 py-0.5 text-xs text-ink/60 border border-stone-200/60">
-                {formatCategoryLabel(subscription.category)}
-              </span>
-            )}
+              {isTrial ? (
+                <span className="rounded bg-amber-light border border-amber/40 px-1.5 py-0.5 text-[11px] font-bold text-amber tracking-wide flex items-center gap-1">
+                  <span>🛡️</span>
+                  <span>TRIAL</span>
+                </span>
+              ) : (
+                <span className="rounded bg-stone-100 px-1.5 py-0.5 text-xs text-ink/60 border border-stone-200/60">
+                  {formatCategoryLabel(subscription.category)}
+                </span>
+              )}
 
-            <span
-              className={`rounded border px-1.5 py-0.5 text-xs font-medium ${
-                STATUS_BADGE[subscription.status] || STATUS_BADGE.active
-              }`}
-            >
-              {subscription.status}
-            </span>
-
-            {/* Trial Sentinel Urgency Badges */}
-            {isTrial && subscription.status === 'active' && (
               <span
-                className={`rounded border px-1.5 py-0.5 text-xs font-bold ${
-                  days <= 1
-                    ? 'bg-rust text-white border-rust animate-pulse'
-                    : days <= 3
-                    ? 'bg-amber text-white border-amber'
-                    : 'bg-amber-light text-amber border-amber/40'
+                className={`rounded border px-1.5 py-0.5 text-xs font-medium ${
+                  STATUS_BADGE[subscription.status] || STATUS_BADGE.active
                 }`}
               >
-                {days < 0
-                  ? `Deadline passed (${Math.abs(days)}d ago)`
-                  : days === 0
-                  ? '🚨 Deadline TODAY!'
-                  : days === 1
-                  ? '⚠️ Deadline tomorrow!'
-                  : `⏳ Deadline in ${days}d`}
+                {subscription.status}
               </span>
-            )}
 
-            {!isTrial && soon && (
-              <span className="rounded bg-amber-light border border-amber/30 px-1.5 py-0.5 text-xs font-medium text-amber">
-                {days === 0 ? 'renews today' : `renews in ${days}d`}
-              </span>
-            )}
-
-            {!isTrial && overdue && (
-              <span className="rounded bg-rust-light border border-rust/30 px-1.5 py-0.5 text-xs font-medium text-rust">
-                renewal due ({Math.abs(days)}d ago)
-              </span>
-            )}
-
-            {priceIncrease && (
-              <span className="rounded bg-rust-light border border-rust/30 px-1.5 py-0.5 text-xs font-medium text-rust">
-                price hike {formatMoney(priceIncrease.oldAmount, subscription.currency)} →{' '}
-                {formatMoney(priceIncrease.newAmount, subscription.currency)}
-              </span>
-            )}
-          </div>
-
-          <p className="mt-0.5 text-xs text-ink/60">
-            {isTrial ? (
-              <>
-                <span>
-                  Trial ends {formatDate(subscription.trialEndDate || subscription.nextRenewalDate)}
+              {/* Trial Sentinel Urgency Badges */}
+              {isTrial && subscription.status === 'active' && (
+                <span
+                  className={`rounded border px-1.5 py-0.5 text-xs font-bold ${
+                    days <= 1
+                      ? 'bg-rust text-white border-rust animate-pulse'
+                      : days <= 3
+                      ? 'bg-amber text-white border-amber'
+                      : 'bg-amber-light text-amber border-amber/40'
+                  }`}
+                >
+                  {days < 0
+                    ? `Deadline passed (${Math.abs(days)}d ago)`
+                    : days === 0
+                    ? '🚨 Deadline TODAY!'
+                    : days === 1
+                    ? '⚠️ Deadline tomorrow!'
+                    : `⏳ Deadline in ${days}d`}
                 </span>
-                {subscription.postTrialAmount && (
-                  <span className="ml-2 font-medium text-ink/80">
-                    • Then {formatMoney(subscription.postTrialAmount, subscription.postTrialCurrency || subscription.currency)} / {subscription.billingCycle}
+              )}
+
+              {!isTrial && soon && (
+                <span className="rounded bg-amber-light border border-amber/30 px-1.5 py-0.5 text-xs font-medium text-amber">
+                  {days === 0 ? 'renews today' : `renews in ${days}d`}
+                </span>
+              )}
+
+              {!isTrial && overdue && (
+                <span className="rounded bg-rust-light border border-rust/30 px-1.5 py-0.5 text-xs font-medium text-rust">
+                  renewal due ({Math.abs(days)}d ago)
+                </span>
+              )}
+
+              {priceIncrease && (
+                <span className="rounded bg-rust-light border border-rust/30 px-1.5 py-0.5 text-xs font-medium text-rust">
+                  price hike {formatMoney(priceIncrease.oldAmount, subscription.currency)} →{' '}
+                  {formatMoney(priceIncrease.newAmount, subscription.currency)}
+                </span>
+              )}
+            </div>
+
+            <p className="mt-0.5 text-xs text-ink/60">
+              {isTrial ? (
+                <>
+                  <span>
+                    Trial ends {formatDate(subscription.trialEndDate || subscription.nextRenewalDate)}
                   </span>
-                )}
-              </>
-            ) : (
-              <>
-                <span className="capitalize">{subscription.billingCycle}</span>
-                <span className="mx-1">•</span>
-                <span>Next: {formatDate(subscription.nextRenewalDate)}</span>
-              </>
-            )}
-            {subscription.notes && (
-              <>
-                <span className="mx-1">•</span>
-                <span className="italic text-ink/50">{subscription.notes}</span>
-              </>
-            )}
+                  {subscription.postTrialAmount && (
+                    <span className="ml-2 font-medium text-ink/80">
+                      • Then {formatMoney(subscription.postTrialAmount, subscription.postTrialCurrency || subscription.currency)} / {subscription.billingCycle}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>
+                  <span className="capitalize">{subscription.billingCycle}</span>
+                  <span className="mx-1">•</span>
+                  <span>Next: {formatDate(subscription.nextRenewalDate)}</span>
+                </>
+              )}
+              {subscription.notes && (
+                <>
+                  <span className="mx-1">•</span>
+                  <span className="italic text-ink/50">{subscription.notes}</span>
+                </>
+              )}
+            </p>
+          </div>
+        </div>
+
+        {/* Mobile-only Price (aligned top-right on mobile screens) */}
+        <div className="text-right sm:hidden shrink-0">
+          <p className="tabular font-display text-sm font-semibold text-ink">
+            {formatMoney(subscription.amount, subscription.currency)}
           </p>
+          {isDifferentCurrency ? (
+            <p className="tabular text-[10px] font-medium text-ledger-dark" title="Converted using live rates">
+              ≈ {formatMoney(subscription.convertedAmount, baseCurrency)}
+            </p>
+          ) : (
+            <p className="text-[10px] text-ink/50 capitalize">per {subscription.billingCycle}</p>
+          )}
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-3">
-        <div className="text-right">
+      {/* Desktop Price + Action Buttons */}
+      <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t border-line/40 sm:border-0">
+        {/* Desktop-only Price */}
+        <div className="hidden sm:block text-right">
           <p className="tabular font-display text-base font-semibold text-ink">
             {formatMoney(subscription.amount, subscription.currency)}
           </p>
           {isDifferentCurrency ? (
-            <p className="tabular text-[11px] font-medium text-ledger-dark" title={`Converted using live rates`}>
+            <p className="tabular text-[11px] font-medium text-ledger-dark" title="Converted using live rates">
               ≈ {formatMoney(subscription.convertedAmount, baseCurrency)}
             </p>
           ) : (
@@ -141,7 +164,8 @@ export default function SubscriptionCard({
           )}
         </div>
 
-        <div className="flex items-center gap-1 opacity-80 transition-opacity group-hover:opacity-100">
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-1 opacity-90 sm:opacity-80 transition-opacity group-hover:opacity-100">
           {/* Trial Sentinel Convert Button */}
           {isTrial && subscription.status === 'active' && onConvertTrial && (
             <button

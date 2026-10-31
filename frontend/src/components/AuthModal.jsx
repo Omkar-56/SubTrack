@@ -90,7 +90,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-ink/40 backdrop-blur-xs transition-opacity"
@@ -100,7 +100,7 @@ export default function AuthModal({ isOpen, initialMode = 'login', onClose }) {
       />
 
       {/* Modal Dialog Card */}
-      <div className="relative w-full max-w-sm rounded-lg border border-line bg-white p-6 sm:p-7 shadow-xl z-10 animate-in fade-in zoom-in-95 duration-150">
+      <div className="relative w-full max-w-sm rounded-lg border border-line bg-white p-5 sm:p-7 shadow-xl z-10 animate-in fade-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto my-auto">
         {/* 1. SubTrack Logo and Cross (X) Button */}
         <div className="flex items-center justify-between pb-4 border-b border-line/60">
           <div className="flex items-center gap-2">

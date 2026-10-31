@@ -16,8 +16,8 @@ export default function Footer() {
   return (
     <footer className="w-full bg-ledger-dark border-t border-white/10">
       {/* Main footer body */}
-      <div className="mx-auto max-w-[1440px] w-full px-6 sm:px-10 lg:px-14 pt-14 pb-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8">
+      <div className="mx-auto max-w-[1440px] w-full px-4 sm:px-10 lg:px-14 pt-10 sm:pt-14 pb-8 sm:pb-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12 lg:gap-8">
 
           {/* Brand column */}
           <div className="lg:col-span-5 space-y-4">
@@ -83,7 +83,7 @@ export default function Footer() {
 
       {/* Bottom bar */}
       <div className="border-t border-white/10">
-        <div className="mx-auto max-w-[1440px] w-full px-6 sm:px-10 lg:px-14 py-4">
+        <div className="mx-auto max-w-[1440px] w-full px-4 sm:px-10 lg:px-14 py-4">
           <p className="text-xs text-white/35">
             © {new Date().getFullYear()} SubTrack. All rights reserved.
           </p>

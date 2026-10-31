@@ -101,8 +101,8 @@ export default function SubscriptionForm({ initial, defaultCurrency = 'USD', onS
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-xs p-4 overflow-y-auto">
-      <div className="w-full max-w-xl rounded-md border border-line bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto">
+      <div className="w-full max-w-xl rounded-md border border-line bg-white p-4 sm:p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150 max-h-[92vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-line pb-4">
           <div className="flex items-center gap-3">
@@ -339,7 +339,7 @@ export default function SubscriptionForm({ initial, defaultCurrency = 'USD', onS
           {error && <p className="text-xs text-rust font-medium">{error}</p>}
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-line">
+          <div className="flex items-center justify-end gap-2.5 sm:gap-3 pt-4 border-t border-line">
             <button
               type="button"
               onClick={onCancel}
